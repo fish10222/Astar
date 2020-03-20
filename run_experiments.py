@@ -5,6 +5,7 @@ from pathlib import Path
 from cbs import CBSSolver
 from independent import IndependentSolver
 from prioritized import PrioritizedPlanningSolver
+from Astar import AstarSolver
 from visualize import Animation
 from single_agent_planner import get_sum_of_cost
 
@@ -102,6 +103,10 @@ if __name__ == '__main__':
         elif args.solver == "Prioritized":
             print("***Run Prioritized***")
             solver = PrioritizedPlanningSolver(my_map, starts, goals)
+            paths = solver.find_solution()
+        elif args.solver == "Coupled":
+            print("***Run Coupled***")
+            solver = AstarSolver(my_map, starts, goals)
             paths = solver.find_solution()
         else:
             raise RuntimeError("Unknown solver!")
