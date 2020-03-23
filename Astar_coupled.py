@@ -71,14 +71,15 @@ def get_path(goal_node):
 
 def a_star_coupled(my_map, start_locs, goal_locs, h_values, ext_constraints):
     # A* + OD for 2 agents ONLY
-    # TODO: Heuristics
+    # TODO: Checking heuristics
 
     constraintTable = build_ext_constraints_tbl(ext_constraints)
     open_list = []
     closed_list = dict()
-
+    
+    h_value = h_values[start_locs[0]] + h_values[goal_locs[1]]
     root = {'loc0': start_locs[0], 'loc1': start_locs[1], 'g_val': 0,
-            'h_val': sum(h_values), 'parent': None, 'timestep': 0}
+            'h_val': h_value, 'parent': None, 'timestep': 0}
     push_node(open_list, root)
 
     closed_list[(root['loc0'], root['loc1'], root['timestep'])] = root
@@ -100,7 +101,7 @@ def a_star_coupled(my_map, start_locs, goal_locs, h_values, ext_constraints):
                 child = {'loc0': child_loc, 
                         'loc1': None,
                         'g_val': curr['g_val'] + 1, 
-                        'h_val': h_values['child_loc'],
+                        'h_val': h_values[child_loc],
                         'parent': curr,
                         'timestep': curr['timestep'] + 1}
 
@@ -120,7 +121,7 @@ def a_star_coupled(my_map, start_locs, goal_locs, h_values, ext_constraints):
                 child = {'loc0': curr['loc0'], 
                         'loc1': child_loc,
                         'g_val': curr['g_val'] + 1, 
-                        'h_val': curr['h_val'] + h_values['child_loc'],
+                        'h_val': curr['h_val'] + h_values[child_loc],
                         'parent': curr['parent'],
                         'timestep': curr['timestep']}
                 
