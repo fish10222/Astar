@@ -104,7 +104,7 @@ if __name__ == '__main__':
             print("***Run Prioritized***")
             solver = PrioritizedPlanningSolver(my_map, starts, goals)
             paths = solver.find_solution()
-        elif args.solver == "Coupled":
+        elif args.solver == "Astar":
             print("***Run Coupled***")
             solver = AstarSolver(my_map, starts, goals)
             paths = solver.find_solution()
