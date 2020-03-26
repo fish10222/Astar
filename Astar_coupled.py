@@ -1,16 +1,33 @@
 import heapq
+from functools import total_ordering
+
+@total_ordering
+class KeyDict(object):
+    def __init__(self, key, dct):
+        self.key = key
+        self.dct = dct
+
+    def __lt__(self, other):
+        return self.key < other.key
+
+    def __eq__(self, other):
+        return self.key == other.key
+
+    def __repr__(self):
+        return '{0.__class__.__name__}(key={0.key}, dct={0.dct})'.format(self)
+
 
 def move(loc, dir):
     directions = [(0, -1), (1, 0), (0, 1), (-1, 0), (0, 0)]
     return loc[0] + directions[dir][0], loc[1] + directions[dir][1]
 
 def push_node(open_list, node):
-    heapq.heappush(open_list, (node['g_val'] + node['h_val'], node['h_val'], node['loc'], node))
+    heapq.heappush(open_list, KeyDict((node['g_val'] + node['h_val'], node['h_val'], (node['loc0'], node['loc1'])) , node))
 
 
 def pop_node(open_list):
-    _, _, _, curr = heapq.heappop(open_list)
-    return curr
+    curr = heapq.heappop(open_list)
+    return curr.dct
 
 def build_ext_constraints_tbl(constraints):
     if not constraints: 
@@ -35,6 +52,9 @@ def compare_nodes(n1, n2):
     return n1['g_val'] + n1['h_val'] < n2['g_val'] + n2['h_val']
 
 def is_ext_constrained(curr_loc, next_loc, next_time, constraint_table):
+    if not constraint_table:
+        return False
+
     if next_time not in constraint_table:
         return False
     
@@ -77,7 +97,8 @@ def a_star_coupled(my_map, start_locs, goal_locs, h_values, ext_constraints):
     open_list = []
     closed_list = dict()
     
-    h_value = h_values[start_locs[0]] + h_values[goal_locs[1]]
+    
+    h_value = h_values[0][start_locs[0]] + h_values[1][goal_locs[1]]
     root = {'loc0': start_locs[0], 'loc1': start_locs[1], 'g_val': 0,
             'h_val': h_value, 'parent': None, 'timestep': 0}
     push_node(open_list, root)
@@ -101,7 +122,7 @@ def a_star_coupled(my_map, start_locs, goal_locs, h_values, ext_constraints):
                 child = {'loc0': child_loc, 
                         'loc1': None,
                         'g_val': curr['g_val'] + 1, 
-                        'h_val': h_values[child_loc],
+                        'h_val': h_values[0][child_loc],
                         'parent': curr,
                         'timestep': curr['timestep'] + 1}
 
@@ -110,7 +131,7 @@ def a_star_coupled(my_map, start_locs, goal_locs, h_values, ext_constraints):
         else:
             # Standard Node
             for dir in range(5):
-                child_loc = move(curr['loc1'], dir)
+                child_loc = move(curr['parent']['loc1'], dir)
                 
                 if is_illegal(child_loc, my_map) or is_ext_constrained(curr['parent']['loc1'], child_loc, curr['timestep'], constraintTable):
                     continue
@@ -121,7 +142,7 @@ def a_star_coupled(my_map, start_locs, goal_locs, h_values, ext_constraints):
                 child = {'loc0': curr['loc0'], 
                         'loc1': child_loc,
                         'g_val': curr['g_val'] + 1, 
-                        'h_val': curr['h_val'] + h_values[child_loc],
+                        'h_val': curr['h_val'] + h_values[1][child_loc],
                         'parent': curr['parent'],
                         'timestep': curr['timestep']}
                 
