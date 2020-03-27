@@ -1,4 +1,5 @@
 import heapq
+import copy
 from functools import total_ordering
 
 @total_ordering
@@ -22,7 +23,7 @@ def move(loc, dir):
     return loc[0] + directions[dir][0], loc[1] + directions[dir][1]
 
 def push_node(open_list, node):
-    heapq.heappush(open_list, KeyDict((node['g_val'] + node['h_val'], node['h_val'], (node['loc0'], node['loc1'])) , node))
+    heapq.heappush(open_list, KeyDict((node['g_val'] + node['h_val'], node['h_val'], node['loc']) , node))
 
 
 def pop_node(open_list):
@@ -71,88 +72,113 @@ def is_illegal(child_loc, my_map):
     return retVal
 
 def is_conflicted(loc0, parent0, loc1, parent1):
+    # TODO: upgrade for multiple agents
     if loc0 == loc1:
         return True
     if loc0 == parent1 and loc1 == parent0:
         return True
     return False
 
-def get_path(goal_node):
-    path0 = []
-    path1 = []
+def get_path(goal_node, agentCount):
+    retVal = [ [] for i in range(agentCount) ]
+
     curr = goal_node
     while curr is not None:
-        path0.append(curr['loc0'])
-        path1.append(curr['loc1'])
+        for j in range(agentCount):
+            retVal[j].append(curr['loc'][j])
         curr = curr['parent']
-    path0.reverse()
-    path1.reverse()
-    return [path0, path1]
+
+    for path in retVal:
+        path.reverse()
+
+    
+    return retVal
 
 def a_star_coupled(my_map, start_locs, goal_locs, h_values, ext_constraints):
     # A* + OD for 2 agents ONLY
-    # TODO: Checking heuristics
+    # TODO: Update for multiple agents
+
+    agentCount = len(start_locs)
 
     constraintTable = build_ext_constraints_tbl(ext_constraints)
     open_list = []
     closed_list = dict()
     
-    
-    h_value = h_values[0][start_locs[0]] + h_values[1][goal_locs[1]]
-    root = {'loc0': start_locs[0], 'loc1': start_locs[1], 'g_val': 0,
-            'h_val': h_value, 'parent': None, 'timestep': 0}
+    h_value = 0
+    for i in range(0, agentCount):
+        h_value += h_values[i][start_locs[i]]
+
+    root = {'loc': tuple(start_locs), 
+            'g_val': 0,
+            'h_val': h_value, 
+            'parent': None, 
+            'unassigned': 0,
+            'timestep': 0}
     push_node(open_list, root)
 
-    closed_list[(root['loc0'], root['loc1'], root['timestep'])] = root
+    closed_list[(root['loc' ], root['timestep'])] = root
 
     while len(open_list) > 0:
         curr = pop_node(open_list)
 
-        if curr['loc0'] == goal_locs[0] and curr['loc1'] == goal_locs[1]:
-            return get_path(curr)
+        if curr['loc'] == tuple(goal_locs):
+            return get_path(curr, agentCount)
 
-        if curr['loc1']:
-            # Intermediate Node
+        if curr['unassigned'] == 0:
             for dir in range(5):
-                child_loc = move(curr['loc0'], dir)
+                child_loc = move(curr['loc'][0], dir)
                 
-                if is_illegal(child_loc, my_map) or is_ext_constrained(curr['loc0'], child_loc, curr['timestep'] + 1, constraintTable):
+                if is_illegal(child_loc, my_map) or is_ext_constrained(curr['loc'], child_loc, curr['timestep'] + 1, constraintTable):
                     continue
+                
+                new_loc = tuple(child_loc if i == 0 else None for i in range(agentCount))
 
-                child = {'loc0': child_loc, 
-                        'loc1': None,
+                child = {'loc': new_loc,
                         'g_val': curr['g_val'] + 1, 
                         'h_val': h_values[0][child_loc],
                         'parent': curr,
+                        'unassigned': agentCount - 1,
                         'timestep': curr['timestep'] + 1}
 
                 # Only push standard nodes into closed list
                 push_node(open_list, child)
+
+        
         else:
-            # Standard Node
+            # print(curr)
+            agent = agentCount - curr['unassigned']
+            isLastAgent = (curr['unassigned'] == 1)
+
             for dir in range(5):
-                child_loc = move(curr['parent']['loc1'], dir)
-                
-                if is_illegal(child_loc, my_map) or is_ext_constrained(curr['parent']['loc1'], child_loc, curr['timestep'], constraintTable):
+                child_loc = move(curr['parent']['loc'][agent], dir)
+
+                if is_illegal(child_loc, my_map) or is_ext_constrained(curr['parent']['loc'][i], child_loc, curr['timestep'], constraintTable):
                     continue
 
-                if is_conflicted(curr['loc0'], curr['parent']['loc0'], child_loc, curr['parent']['loc1']):
+                if is_conflicted(curr['loc'][0], curr['parent']['loc'][0], child_loc, curr['parent']['loc'][1]):
                     continue
                 
-                child = {'loc0': curr['loc0'], 
-                        'loc1': child_loc,
+                new_loc = list(curr['loc'])
+                new_loc[agent] = child_loc
+
+                child = {'loc': tuple(new_loc), 
                         'g_val': curr['g_val'] + 1, 
-                        'h_val': curr['h_val'] + h_values[1][child_loc],
+                        'h_val': curr['h_val'] + h_values[agent][child_loc],
                         'parent': curr['parent'],
+                        'unassigned': curr['unassigned'] - 1,
                         'timestep': curr['timestep']}
-                
-                if (child['loc0'], child['loc1'], child['timestep']) in closed_list:
-                    existing_node = closed_list[(child['loc0'], child['loc1'], child['timestep'])]
-                    if compare_nodes(child, existing_node):
-                        closed_list[(child['loc0'], child['loc1'], child['timestep'])] = child
+                        
+                if isLastAgent:
+                    if (child['loc'], child['timestep']) in closed_list:
+                        existing_node = closed_list[(child['loc'], child['timestep'])]
+                        if compare_nodes(child, existing_node):
+                            closed_list[(child['loc'], child['timestep'])] = child
+                            push_node(open_list, child)
+                    else:
+                        closed_list[(child['loc'], child['timestep'])] = child
                         push_node(open_list, child)
                 else:
-                    closed_list[(child['loc0'], child['loc1'], child['timestep'])] = child
                     push_node(open_list, child)
+                
 
     return None
