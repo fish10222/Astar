@@ -71,12 +71,17 @@ def is_illegal(child_loc, my_map):
         retVal = True
     return retVal
 
-def is_conflicted(loc0, parent0, loc1, parent1):
+def is_conflicted(loc, parent_loc, agent, child_loc):
     # TODO: upgrade for multiple agents
-    if loc0 == loc1:
-        return True
-    if loc0 == parent1 and loc1 == parent0:
-        return True
+    for i in range(len(loc)):
+        if not loc[i]:
+            break
+
+        if child_loc == loc[i]:
+            return True
+        if loc[i] == parent_loc[agent] and child_loc == parent_loc[i]:
+            return True
+
     return False
 
 def get_path(goal_node, agentCount):
@@ -155,7 +160,7 @@ def a_star_coupled(my_map, start_locs, goal_locs, h_values, ext_constraints):
                 if is_illegal(child_loc, my_map) or is_ext_constrained(curr['parent']['loc'][i], child_loc, curr['timestep'], constraintTable):
                     continue
 
-                if is_conflicted(curr['loc'][0], curr['parent']['loc'][0], child_loc, curr['parent']['loc'][1]):
+                if is_conflicted(curr['loc'], curr['parent']['loc'], agent, child_loc):
                     continue
                 
                 new_loc = list(curr['loc'])
