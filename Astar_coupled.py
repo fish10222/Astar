@@ -4,6 +4,7 @@ from functools import total_ordering
 
 @total_ordering
 class KeyDict(object):
+    # Need this since you cant compare dict()
     def __init__(self, key, dct):
         self.key = key
         self.dct = dct
@@ -31,9 +32,6 @@ def pop_node(open_list):
     return curr.dct
 
 def build_ext_constraints_tbl(constraints):
-    if not constraints: 
-        return None
-    
     constraintTable = dict()
     for constraint in constraints:
         if constraint['timestep'] not in constraintTable:
@@ -53,6 +51,7 @@ def compare_nodes(n1, n2):
     return n1['g_val'] + n1['h_val'] < n2['g_val'] + n2['h_val']
 
 def is_ext_constrained(curr_loc, next_loc, next_time, constraint_table):
+    # External constraints check
     if not constraint_table:
         return False
 
@@ -66,13 +65,14 @@ def is_ext_constrained(curr_loc, next_loc, next_time, constraint_table):
     return False
 
 def is_illegal(child_loc, my_map):
+    # Check out of bound moves
     retVal = False
     if child_loc[0] < 0 or child_loc[1] < 0 or child_loc[0] > len(my_map) - 1 or child_loc[1] > len(my_map[0]) - 1 or my_map[child_loc[0]][child_loc[1]]:
         retVal = True
     return retVal
 
 def is_conflicted(loc, parent_loc, agent, child_loc):
-    # TODO: upgrade for multiple agents
+    # Check if a move is conflicted (agents moving into each other)
     for i in range(len(loc)):
         if not loc[i]:
             break
@@ -100,8 +100,7 @@ def get_path(goal_node, agentCount):
     return retVal
 
 def a_star_coupled(my_map, start_locs, goal_locs, h_values, ext_constraints):
-    # A* + OD for 2 agents ONLY
-    # TODO: Update for multiple agents
+    # A* + OD for multiple agents
 
     agentCount = len(start_locs)
 
@@ -112,6 +111,10 @@ def a_star_coupled(my_map, start_locs, goal_locs, h_values, ext_constraints):
     h_value = 0
     for i in range(0, agentCount):
         h_value += h_values[i][start_locs[i]]
+
+    # Fix goal constraints
+    constraint_timesteps = constraintTable.keys()
+    earliest_goal_timestep = max(constraint_timesteps) if constraint_timesteps else 0
 
     root = {'loc': tuple(start_locs), 
             'g_val': 0,
@@ -126,10 +129,11 @@ def a_star_coupled(my_map, start_locs, goal_locs, h_values, ext_constraints):
     while len(open_list) > 0:
         curr = pop_node(open_list)
 
-        if curr['loc'] == tuple(goal_locs):
+        if curr['loc'] == tuple(goal_locs) and curr['timestep'] >= earliest_goal_timestep:
             return get_path(curr, agentCount)
 
         if curr['unassigned'] == 0:
+            # Intermediate Node
             for dir in range(5):
                 child_loc = move(curr['loc'][0], dir)
                 
@@ -150,7 +154,6 @@ def a_star_coupled(my_map, start_locs, goal_locs, h_values, ext_constraints):
 
         
         else:
-            # print(curr)
             agent = agentCount - curr['unassigned']
             isLastAgent = (curr['unassigned'] == 1)
 
@@ -174,6 +177,7 @@ def a_star_coupled(my_map, start_locs, goal_locs, h_values, ext_constraints):
                         'timestep': curr['timestep']}
                         
                 if isLastAgent:
+                    # Standard Node (all agents moves assigned for this timestep)
                     if (child['loc'], child['timestep']) in closed_list:
                         existing_node = closed_list[(child['loc'], child['timestep'])]
                         if compare_nodes(child, existing_node):
@@ -183,6 +187,7 @@ def a_star_coupled(my_map, start_locs, goal_locs, h_values, ext_constraints):
                         closed_list[(child['loc'], child['timestep'])] = child
                         push_node(open_list, child)
                 else:
+                    # Still intermediate node
                     push_node(open_list, child)
                 
 
