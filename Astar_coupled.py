@@ -160,7 +160,7 @@ def a_star_coupled(my_map, start_locs, goal_locs, h_values, ext_constraints):
             for dir in range(5):
                 child_loc = move(curr['parent']['loc'][agent], dir)
 
-                if is_illegal(child_loc, my_map) or is_ext_constrained(curr['parent']['loc'][i], child_loc, curr['timestep'], constraintTable):
+                if is_illegal(child_loc, my_map) or is_ext_constrained(curr['parent']['loc'][agent], child_loc, curr['timestep'], constraintTable):
                     continue
 
                 if is_conflicted(curr['loc'], curr['parent']['loc'], agent, child_loc):
