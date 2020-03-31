@@ -2,7 +2,7 @@ import time as timer
 import heapq
 import random
 from single_agent_planner import compute_heuristics, a_star, get_location, get_sum_of_cost
-
+from Astar_coupled import a_star_coupled
 
 def detect_collision(path1, path2):
     ##############################
@@ -11,7 +11,7 @@ def detect_collision(path1, path2):
     #           A vertex collision occurs if both robots occupy the same location at the same timestep
     #           An edge collision occurs if the robots swap their location at the same timestep.
     #           You should use "get_location(path, t)" to get the location of a robot at time t.
-
+    # TODO: detect collision even when an agent has reached its goal.
     length = max(len(path1), len(path2))
     t = 0
     while t<length:
@@ -85,7 +85,7 @@ class CBSSolver(object):
         starts      - [(x1, y1), (x2, y2), ...] list of start locations
         goals       - [(x1, y1), (x2, y2), ...] list of goal locations
         """
-        self.B = 10 #MA-CBS
+        self.B = 100000 #MA-CBS
         
         self.my_map = my_map
         self.starts = starts
@@ -107,7 +107,7 @@ class CBSSolver(object):
             self.heuristics.append(compute_heuristics(my_map, goal))
 
     def push_node(self, node):
-        heapq.heappush(self.open_list, (node['cost'], len(node['collisions']), self.num_of_generated, node))
+        heapq.heappush(self.open_list, (node['cost'], len(node['meta_collisions']), self.num_of_generated, node))
         print("Generate node {}".format(self.num_of_generated))
         self.num_of_generated += 1
 
@@ -179,22 +179,23 @@ class CBSSolver(object):
                 'paths': [],
                 'meta_collisions': []} #MA-CBS
         for i in range(self.num_of_agents):  # Find initial path for each agent
-            path = a_star(self.my_map, self.starts[i], self.goals[i], self.heuristics[i],
-                          i, root['constraints'])
+            #path = a_star(self.my_map, self.starts[i], self.goals[i], self.heuristics[i],
+                          #i, root['constraints'])
+            path = a_star_coupled(self.my_map, [self.starts[i]], [self.goals[i]], [self.heuristics[i]], [])
             if path is None:
                 raise BaseException('No solutions')
-            root['paths'].append(path)
+            root['paths'].append(path[0])
 
         root['cost'] = get_sum_of_cost(root['paths'])
         root['meta_collisions'] = detect_collisions(root['paths'], root['meta_agents'])
         self.push_node(root)
 
         # Task 3.1: Testing
-        print(root['meta_collisions'])
+        #print(root['meta_collisions'])
 
         # Task 3.2: Testing
-        for collision in root['meta_collisions']:
-            print(standard_splitting(collision))
+        #for collision in root['meta_collisions']:
+            #print(standard_splitting(collision))
 
         ##############################
         # Task 3.3: High-Level Search
@@ -208,29 +209,41 @@ class CBSSolver(object):
         closed_list = []
         while len(self.open_list) > 0:
             P = self.pop_node()            # P <- best node from OPEN // lowest solution cost
+            #print(P)
+            
             closed_list.append({'number': count, 'node': P})
             if len(P['meta_collisions']) == 0:  # if P has no conflict then
                 self.print_results(P)
+                #print(self.CM)
                 return P['paths']          #    return P.solution // P is goal
             
             meta_collision = P['meta_collisions'][0]  # C <- first conflict(ai, aj, v, t) in P
             self.updateCM(meta_collision)
         ######## MA-CBS only(tons of work left)
             if self.shouldMerge(meta_collision['a1'], meta_collision['a2']):
+                #print(P)
                 #merge(meta_collision)
                 a_meta = meta_collision['a1'] + meta_collision['a2'] #merge(collision['a1'], collision['a2'])
                 # update meta agents
+                
+                P['meta_agents'] = P['meta_agents'][:]
                 P['meta_agents'].remove(meta_collision['a1'])   
                 P['meta_agents'].remove(meta_collision['a2'])
                 P['meta_agents'].append(a_meta)
 
                 common_ext_constr = self.merge_external_constraints(meta_collision['a1'], meta_collision['a2'], P['meta_constraints'])
                 # update P.constraints (replace old constraints of the conflicted agents with new constraints)
+
+
+
+                P['meta_constraints'] = P['meta_constraints'][:]
                 for c in P['meta_constraints']:
                     if c['meta_agent'] == meta_collision['a1'] or c['meta_agent'] == meta_collision['a2']:
-                        P['meta_constraints'].remove(c)
-                P['meta_constraints'] = P['meta_constraints'] + common_ext_constr
                         
+                        P['meta_constraints'].remove(c)
+                
+                P['meta_constraints'] = P['meta_constraints'] + common_ext_constr
+                
                 # update P.solution (invoke low level(a_meta))
                 meta_starts = []
                 meta_goals = []
@@ -245,10 +258,14 @@ class CBSSolver(object):
                     for i in a_meta:
                         P['paths'][i] = meta_sol.pop(0)
                     P['cost'] = get_sum_of_cost(P['paths'])
+                    P['meta_collisions'] = detect_collisions(P['paths'], P['meta_agents'])
+                    #print(P)
                     self.push_node(P)
                 continue
         ########
+            #print(P)
             meta_constraints = standard_splitting(meta_collision)  ## 
+            
             for meta_constraint in meta_constraints:
                 Q = {'cost': 0,
                      'meta_agents': P['meta_agents'],
@@ -285,11 +302,18 @@ class CBSSolver(object):
                     meta_goals.append(self.goals[i])
                     meta_starts.append(self.starts[i])
                     meta_heuristics.append(self.heuristics[i])
+                
                 paths = a_star_coupled(self.my_map, meta_starts, meta_goals, meta_heuristics, extract_external_constraints(meta_ext_constraints))
+
                 if paths is not None:
                     for a in meta_agent:
-                        Q['paths'][a] = paths.pop(0)
+                      
+                        Q['paths'][a] = paths.pop(0)[:]
+
+                    Q['cost'] = get_sum_of_cost(Q['paths'])
+                    Q['meta_collisions'] = detect_collisions(Q['paths'], Q['meta_agents'])
                     self.push_node(Q)
+        
         self.print_results(root)
         return root['paths']
 
