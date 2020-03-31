@@ -259,7 +259,7 @@ class CBSSolver(object):
                         P['paths'][i] = meta_sol.pop(0)
                     P['cost'] = get_sum_of_cost(P['paths'])
                     P['meta_collisions'] = detect_collisions(P['paths'], P['meta_agents'])
-                    print(P)
+                    #print(P)
                     self.push_node(P)
                 continue
         ########
