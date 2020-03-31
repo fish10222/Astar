@@ -143,7 +143,7 @@ def a_star_coupled(my_map, start_locs, goal_locs, h_values, ext_constraints):
                 new_loc = tuple(child_loc if i == 0 else None for i in range(agentCount))
 
                 child = {'loc': new_loc,
-                        'g_val': curr['g_val'] + 1, 
+                        'g_val': curr['g_val'], 
                         'h_val': h_values[0][child_loc],
                         'parent': curr,
                         'unassigned': agentCount - 1,
@@ -170,7 +170,7 @@ def a_star_coupled(my_map, start_locs, goal_locs, h_values, ext_constraints):
                 new_loc[agent] = child_loc
 
                 child = {'loc': tuple(new_loc), 
-                        'g_val': curr['g_val'] + 1, 
+                        'g_val': (curr['g_val'] + 1) if isLastAgent else curr['g_val'], 
                         'h_val': curr['h_val'] + h_values[agent][child_loc],
                         'parent': curr['parent'],
                         'unassigned': curr['unassigned'] - 1,
