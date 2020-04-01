@@ -96,13 +96,22 @@ def get_path(goal_node, agentCount):
         curr = curr['parent']
 
     for path in retVal:
+        i = 0
+        for j in range(1, len(path)):
+            if path[0] == path[j]:
+                i += 1
+            else:
+                break
+        
         path.reverse()
+        if i != 0: del path[-i:]
 
-    
     return retVal
 
+    
 def a_star_coupled(my_map, start_locs, goal_locs, h_values, ext_constraints):
     # A* + OD for multiple agents
+    # print("MA_CBS triggered")
 
     agentCount = len(start_locs)
 
@@ -151,13 +160,19 @@ def a_star_coupled(my_map, start_locs, goal_locs, h_values, ext_constraints):
                         'unassigned': agentCount - 1,
                         'timestep': curr['timestep'] + 1}
 
-                # Only push standard nodes into closed list
-                push_node(open_list, child)
+                if (child['loc'], child['timestep']) in closed_list:
+                    existing_node = closed_list[(child['loc'], child['timestep'])]
+                    if compare_nodes(child, existing_node):
+                        closed_list[(child['loc'], child['timestep'])] = child
+                        push_node(open_list, child)
+                else:
+                    closed_list[(child['loc'], child['timestep'])] = child
+                    push_node(open_list, child)
 
         
         else:
             agent = agentCount - curr['unassigned']
-            isLastAgent = (curr['unassigned'] == 1)
+            # isLastAgent = (curr['unassigned'] == 1)
 
             for dir in range(5):
                 child_loc = move(curr['parent']['loc'][agent], dir)
@@ -178,18 +193,13 @@ def a_star_coupled(my_map, start_locs, goal_locs, h_values, ext_constraints):
                         'unassigned': curr['unassigned'] - 1,
                         'timestep': curr['timestep']}
                         
-                if isLastAgent:
-                    # Standard Node (all agents moves assigned for this timestep)
-                    if (child['loc'], child['timestep']) in closed_list:
-                        existing_node = closed_list[(child['loc'], child['timestep'])]
-                        if compare_nodes(child, existing_node):
-                            closed_list[(child['loc'], child['timestep'])] = child
-                            push_node(open_list, child)
-                    else:
+                if (child['loc'], child['timestep']) in closed_list:
+                    existing_node = closed_list[(child['loc'], child['timestep'])]
+                    if compare_nodes(child, existing_node):
                         closed_list[(child['loc'], child['timestep'])] = child
                         push_node(open_list, child)
                 else:
-                    # Still intermediate node
+                    closed_list[(child['loc'], child['timestep'])] = child
                     push_node(open_list, child)
                 
 
