@@ -90,13 +90,13 @@ def is_conflicted(node, agent, child_loc):
         if child_loc == node['loc'][i]:
             return True
 
-        curr = node['parent']
-        for _ in range(i):
+        curr = node
+        for _ in range(agent - i):
             curr = curr['parent']
-        
+
         if node['loc'][i] == node['loc'][agent] and child_loc == curr['loc'][i]:
             return True
-    
+
     return False
         
 
@@ -123,7 +123,6 @@ def get_path(goal_node, agentCount):
         
         path.reverse()
         if i != 0: del path[-i:]
-
     return retVal
 
     
@@ -138,7 +137,7 @@ def a_star_coupled(my_map, start_locs, goal_locs, h_values, ext_constraints):
     closed_list = dict()
     
     h_value = 0
-    for i in range(0, agentCount):
+    for i in range(agentCount):
         h_value += h_values[i][start_locs[i]]
 
     # Fix goal constraints
