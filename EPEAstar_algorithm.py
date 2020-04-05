@@ -1,6 +1,7 @@
 import heapq
 import copy
 from functools import total_ordering
+from OSF import OSF
 
 @total_ordering
 class KeyDict(object):
@@ -102,7 +103,7 @@ def epea_star(my_map, start_loc, goal_loc, h_values, agent, ext_constraints):
     
     h_value = 0
     h_value = h_values[start_loc]
-    f_value = h_value #current F-value
+    f_value = h_value #g(n) + h(n), since g(n) = 0 
     f_next = 0 #placeholder for F-next
     # Fix goal constraints
     constraint_timesteps = constraintTable.keys()
@@ -124,6 +125,8 @@ def epea_star(my_map, start_loc, goal_loc, h_values, agent, ext_constraints):
             return get_path(curr)
 
         #Set N and Fnext
+        N = []
+        #f_next = 
 
         for nc in N:
             child_loc = move(curr['loc'], nc)
