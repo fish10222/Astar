@@ -90,10 +90,7 @@ def get_path(goal_node):
 
     
     return paths
-def print_list(open_list, n):
-    for i in range(n):
-        print(open_list[i])
-    pass
+
 def a_star_coupled(my_map, start_locs, goal_locs, h_values, ext_constraints):  ###### TODO: single agent version and determine no solution
     # A* for multiple agents
     num_of_agents = len(goal_locs)
@@ -128,8 +125,6 @@ def a_star_coupled(my_map, start_locs, goal_locs, h_values, ext_constraints):  #
         count+=1
         ### goal condition and get path
         if curr['locs'] == tuple(goal_locs) or curr['locs'] == goal_locs[0]:
-            print(get_path(curr))
-            print(curr)
             return get_path(curr)
 
         #######################
