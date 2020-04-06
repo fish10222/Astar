@@ -27,9 +27,14 @@ class EPEAStarSolver(object):
     def find_solution(self):
         """ Finds paths for all agents from their start locations to their goal locations."""
 
-        start_time = timer.time()     
-        result = epea_star(self.my_map, self.starts, self.goals, self.heuristics, [])
-
+        start_time = timer.time()
+        result = []
+           
+        for i in range(self.num_of_agents):  
+            path = epea_star(self.my_map, self.starts, self.goals, self.heuristics, i, [])
+            if path is None:
+                raise BaseException('No solutions')
+            result.append(path)
 
         self.CPU_time = timer.time() - start_time
 
@@ -37,5 +42,4 @@ class EPEAStarSolver(object):
         print("CPU time (s):    {:.2f}".format(self.CPU_time))
         print("Sum of costs:    {}".format(get_sum_of_cost(result)))
 
-        return result
         return result
