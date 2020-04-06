@@ -90,7 +90,10 @@ def get_path(goal_node):
 
     
     return paths
-
+def print_list(open_list, n):
+    for i in range(n):
+        print(open_list[i])
+    pass
 def a_star_coupled(my_map, start_locs, goal_locs, h_values, ext_constraints):  ###### TODO: single agent version and determine no solution
     # A* for multiple agents
     num_of_agents = len(goal_locs)
@@ -108,6 +111,10 @@ def a_star_coupled(my_map, start_locs, goal_locs, h_values, ext_constraints):  #
     for i in range(num_of_agents):
         h_value = h_value + h_values[i][start_locs[i]]
     root = {'locs': tuple(start_locs), 'g_val': 0, 'h_val': h_value, 'parent': None, 'timestep' : 0, 'finished_cost' : [-1 for i in range(num_of_agents)]}
+    ### if an agent spawns at its goal, set cost 0
+    for i in range(num_of_agents):
+        if root['locs'][i] == goal_locs[i]:
+            root['finished_cost'][i] = 0
     #if num_of_agents = 1:
     #    root['locs'] = root['locs'][0]
     #else:
@@ -115,12 +122,14 @@ def a_star_coupled(my_map, start_locs, goal_locs, h_values, ext_constraints):  #
     push_node(open_list, root)
     closed_list[(root['locs'], 0)] = root ##use tuple for locs
     while len(open_list) > 0:
-
+        
         curr = pop_node(open_list)
-
+        
         count+=1
         ### goal condition and get path
         if curr['locs'] == tuple(goal_locs) or curr['locs'] == goal_locs[0]:
+            print(get_path(curr))
+            print(curr)
             return get_path(curr)
 
         #######################
@@ -165,16 +174,20 @@ def a_star_coupled(my_map, start_locs, goal_locs, h_values, ext_constraints):  #
             ############## also, if any agent LEAVES its goal, then update finished cost of that agent 
             ############## we update g_values accordingly by the way
             for i in range(num_of_agents):
-                if child['locs'][i] == goal_locs[i]:
-                    if child['finished_cost'][i] == -1:
-                        child['finished_cost'][i] = child['timestep']
+                
                     
-                elif child['locs'][i] != goal_locs[i] and child['finished_cost'][i] != -1:                    
+                if child['locs'][i] != goal_locs[i] and child['finished_cost'][i] != -1:                    
                     # add the missed cost to g_val
                     child['g_val'] = child['g_val'] + child['timestep'] - child['finished_cost'][i]                   
                     child['finished_cost'][i] = -1
 
                 else:
+                    if child['locs'][i] == goal_locs[i]:
+                        if child['finished_cost'][i] == -1:
+                            child['finished_cost'][i] = child['timestep']
+                        
+                    if curr['locs'][i] == goal_locs[i]:
+                        continue
                     child['g_val'] = child['g_val'] + 1
 
             #####
@@ -188,3 +201,4 @@ def a_star_coupled(my_map, start_locs, goal_locs, h_values, ext_constraints):  #
                 push_node(open_list, child)
 
     return None  # Failed to find solutions
+
