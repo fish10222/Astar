@@ -16,14 +16,13 @@ def is_ext_constrained(curr_loc, next_loc, next_time, constraint_table):
 
     if next_time not in constraint_table:
         return False
-    
+
     edgeConstraint = curr_loc + next_loc
 
     if (next_loc in constraint_table[next_time]) or (edgeConstraint in constraint_table[next_time]):
         return True
     return False
 
-    return False
 """
     Lookup table for OSF
     {
@@ -47,16 +46,14 @@ def OSF (fval, curr_node, h_values, my_map, constraint_table, agent):
     f_next = 9999999999999
     for dir in range(5):
         next_loc = move(current_loc, dir)
-
         if is_illegal(next_loc, my_map) or is_ext_constrained(current_loc, next_loc, curr_time + 1, constraint_table):
             continue
-
         next_hval = h_values[agent][next_loc]
-        delta_h = curr_hval - next_hval
+        delta_h = next_hval - curr_hval
         delta_f = lookup_table[delta_h]
         f_next_node = fval + delta_f
         if f_next_node == fval:         #if next node matches the f_value, we put in list
             newlocs.append(next_loc)
         f_next = min(f_next, f_next_node)   #set f_next to samllest f
-    answers = ([], f_next)
+    answers = (newlocs, f_next)
     return answers

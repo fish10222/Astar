@@ -29,8 +29,8 @@ class EPEAStarSolver(object):
 
         start_time = timer.time()
         result = []
-           
-        for i in range(self.num_of_agents):  
+
+        for i in range(self.num_of_agents):
             path = epea_star(self.my_map, self.starts, self.goals, self.heuristics, i, [])
             if path is None:
                 raise BaseException('No solutions')
