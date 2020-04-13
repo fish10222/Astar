@@ -55,5 +55,7 @@ def OSF (fval, curr_node, h_values, my_map, constraint_table, agent):
         if f_next_node == fval:         #if next node matches the f_value, we put in list
             newlocs.append(next_loc)
         f_next = min(f_next, f_next_node)   #set f_next to samllest f
+    if f_next >= 9999999999999:
+        f_next = -1
     answers = (newlocs, f_next)
     return answers

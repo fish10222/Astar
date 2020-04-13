@@ -1,6 +1,6 @@
 import heapq
 import copy
-#import time 
+#import time
 from functools import total_ordering
 from OSF import OSF
 
