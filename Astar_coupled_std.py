@@ -1,16 +1,24 @@
 import heapq
 from itertools import product
 
+
+
+def checkDup(l):
+    
+    return [dict(t) for t in {tuple(d.items()) for d in l}]
+
 def move(loc, dir):
     directions = [(0, -1), (1, 0), (0, 1), (-1, 0), (0, 0)]
     return loc[0] + directions[dir][0], loc[1] + directions[dir][1]
 
 def push_node(open_list, node):
-    heapq.heappush(open_list, (node['g_val'] + node['h_val'], node['h_val'], node['locs'] , node))
-
+    #heapq.heappush(open_list, (node['g_val'] + node['h_val'], node['h_val'], node['locs'] , node)) # 
+    heapq.heappush(open_list, (node['g_val'] + node['h_val'], node['h_val'], node['locs'] , node['timestep'], node))
+    #heapq.heappush(open_list, (node['g_val'] + node['h_val'], node['h_val'], node['finished_cost'].count(-1), node['locs'] , node)) # favours paths with more agents reaching goals early
 def pop_node(open_list):
-
-    _, _, _, curr = heapq.heappop(open_list)
+    #_, _, _, curr = heapq.heappop(open_list)
+    t = heapq.heappop(open_list)
+    curr = t[4]
     return curr
 
 def build_ext_constraints_tbl(constraints): 
@@ -91,6 +99,71 @@ def get_path(goal_node):
     
     return paths
 
+def print_list(open_list, n):
+    for i in range(n):
+        print(open_list[i])
+    pass
+
+
+def heappop(heap):
+    """Pop the smallest item off the heap, maintaining the heap invariant."""
+    lastelt = heap.pop()    # raises appropriate IndexError if heap is empty
+    if heap:
+        returnitem = heap[0]
+        heap[0] = lastelt
+        _siftup(heap, 0)
+        return returnitem
+    return lastelt
+
+def _siftup(heap, pos):
+    endpos = len(heap)
+    startpos = pos
+    newitem = heap[pos]
+    # Bubble up the smaller child until hitting a leaf.
+    childpos = 2*pos + 1    # leftmost child position
+    i = 0
+    while childpos < endpos:
+        # Set childpos to index of smaller child.
+        rightpos = childpos + 1
+        print(i)
+        ##########
+        if (heap[childpos][0] == heap[rightpos][0]) and (heap[childpos][1] == heap[rightpos][1]) and (heap[childpos][2] == heap[rightpos][2]):
+            print(heap[childpos])
+            print(heap[rightpos])
+        ##########
+        
+        if rightpos < endpos and not heap[childpos] < heap[rightpos]:
+            childpos = rightpos
+        print(i)
+        # Move the smaller child up.
+        heap[pos] = heap[childpos]
+        pos = childpos
+        childpos = 2*pos + 1
+        i += 1
+    # The leaf at pos is empty now.  Put newitem there, and bubble it up
+    # to its final resting place (by sifting its parents down).
+    heap[pos] = newitem
+    _siftdown(heap, startpos, pos)
+
+def _siftdown(heap, startpos, pos):
+    newitem = heap[pos]
+    # Follow the path to the root, moving parents down until finding a place
+    # newitem fits.
+    i=0
+    while pos > startpos:
+        parentpos = (pos - 1) >> 1
+        parent = heap[parentpos]
+        print(i)
+        #if (parent[0] == newitem[0]) and (parent[1] == newitem[1]) and (parent[2] == newitem[2]):
+        print(parent)
+        print(newitem)
+        if newitem < parent:
+            heap[pos] = parent
+            pos = parentpos
+            continue
+        print(i)
+        break
+    heap[pos] = newitem
 def a_star_coupled(my_map, start_locs, goal_locs, h_values, ext_constraints):  ###### TODO: single agent version and determine no solution
     # A* for multiple agents
     num_of_agents = len(goal_locs)
@@ -121,6 +194,8 @@ def a_star_coupled(my_map, start_locs, goal_locs, h_values, ext_constraints):  #
     while len(open_list) > 0:
         
         curr = pop_node(open_list)
+
+        
         
         count+=1
         ### goal condition and get path
@@ -177,12 +252,13 @@ def a_star_coupled(my_map, start_locs, goal_locs, h_values, ext_constraints):  #
                     child['finished_cost'][i] = -1
 
                 else:
+                    if curr['locs'][i] == goal_locs[i]:
+                        continue
                     if child['locs'][i] == goal_locs[i]:
                         if child['finished_cost'][i] == -1:
                             child['finished_cost'][i] = child['timestep']
                         
-                    if curr['locs'][i] == goal_locs[i]:
-                        continue
+                    
                     child['g_val'] = child['g_val'] + 1
 
             #####
@@ -196,4 +272,13 @@ def a_star_coupled(my_map, start_locs, goal_locs, h_values, ext_constraints):  #
                 push_node(open_list, child)
 
     return None  # Failed to find solutions
+
+
+
+
+
+
+
+
+
 
