@@ -96,8 +96,8 @@ def OSF (fval, curr_node, h_values, my_map, constraint_table, moves, num_of_agen
     print("move")
     for p in list(moves):
         next_loc = [move(curr_node['locs'][i], p[i]) for i in range(num_of_agents)]
-        print('OSF NEXT LOC')
-        print(next_loc)
+        # print('OSF NEXT LOC')
+        # print(next_loc)
         if any_out_of_map(next_loc, my_map):
             continue
 
@@ -120,16 +120,22 @@ def OSF (fval, curr_node, h_values, my_map, constraint_table, moves, num_of_agen
         f_next_node = []
         for i in range(num_of_agents):
             curr_hval = h_values[i][current_loc[i]]
+            print(curr_hval)
             next_hval = h_values[i][next_loc[i]]
+            print(next_hval)
             delta_h = next_hval - curr_hval
             delta_f = lookup_table[delta_h]
-            f_next_node.append(fval[i] + delta_f)
-            if f_next[i] != fval[i] and f_next[i] > fval[i]:
-                f_next[i] = min(f_next[i], f_next_node[i])   #set f_next to samllest f
+            f_next_node.append(curr_hval + curr_node['g_val'] + delta_f)
+        if f_next_node != fval and f_next_node > fval:
+                f_next= min(f_next, f_next_node)   #set f_next to samllest f
+        print("PASSED")
+        print(next_loc)
+        print(f_next_node)
         if f_next_node == fval:         #if next node matches the f_value, we put in list
             newlocs.append(next_loc)
         
-    if math.inf in f_next:
+    #if math.inf in f_next:
+    if len(newlocs) <= 0:
         for f in range(len(f_next)):
             f_next[f] = -1
 
