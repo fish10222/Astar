@@ -15,7 +15,6 @@ class EPEAStarSolver(object):
         self.my_map = my_map
         self.starts = starts
         self.goals = goals
-        self.num_of_agents = len(goals)
 
         self.CPU_time = 0
 
@@ -30,11 +29,10 @@ class EPEAStarSolver(object):
         start_time = timer.time()
         result = []
 
-        for i in range(self.num_of_agents):
-            path = epea_star(self.my_map, self.starts, self.goals, self.heuristics, i, [])
-            if path is None:
-                raise BaseException('No solutions')
-            result.append(path)
+        path = epea_star(self.my_map, self.starts, self.goals, self.heuristics, [])
+        if path is None:
+            raise BaseException('No solutions')
+        result.append(path)
 
         self.CPU_time = timer.time() - start_time
 

@@ -1,6 +1,7 @@
 import heapq
 import copy
-#import time
+import time
+from itertools import product
 from functools import total_ordering
 from OSF import OSF
 
@@ -26,7 +27,7 @@ def move(loc, dir):
     return loc[0] + directions[dir][0], loc[1] + directions[dir][1]
 
 def push_node(open_list, node):
-    heapq.heappush(open_list, KeyDict((node['g_val'] + node['h_val'], node['h_val'], node['loc']) , node))
+    heapq.heappush(open_list, KeyDict((node['g_val'] + node['h_val'], node['h_val'], node['locs']) , node))
 
 
 
@@ -40,12 +41,12 @@ def build_ext_constraints_tbl(constraints):
         if constraint['timestep'] not in constraintTable:
             constraintTable[constraint['timestep']] = set()
 
-        if len(constraint['loc']) == 1:
-            constraintTable[constraint['timestep']].add(constraint['loc'][0])
+        if len(constraint['locs']) == 1:
+            constraintTable[constraint['timestep']].add(constraint['locs'][0])
 
         # Edge constraint
-        elif len(constraint['loc']) == 2:
-            constraintTable[constraint['timestep']].add(constraint['loc'][0] + constraint['loc'][1])
+        elif len(constraint['locs']) == 2:
+            constraintTable[constraint['timestep']].add(constraint['locs'][0] + constraint['locs'][1])
 
     return constraintTable
 
@@ -87,70 +88,92 @@ def is_conflicted(loc, parent_loc, agent, child_loc):
 
     return False
 
-def get_path(goal_node):
-    path = []
+def get_path(goal_node, agentCount):
+    retVal = [ [] for i in range(agentCount) ]
+
     curr = goal_node
     while curr is not None:
-        path.append(curr['loc'])
+        for j in range(agentCount):
+            retVal[j].append(curr['locs'][j])
         curr = curr['parent']
-    path.reverse()
-    return path
 
-def epea_star(my_map, start_loc, goal_loc, h_values, agent, ext_constraints):
+    for path in retVal:
+        path.reverse()
+
+    print(retVal)
+    return retVal
+
+def epea_star(my_map, start_locs, goal_locs, h_values, ext_constraints):
     # EPEA*
-    print(f'AGENT {agent}')
+    num_of_agents = len(goal_locs)
     constraintTable = build_ext_constraints_tbl(ext_constraints)
     open_list = []
     closed_list = dict()
-    h_value = h_values[agent][start_loc[agent]]
-    f_value = h_value #g(n) + h(n), since g(n) = 0
+    h_value = 0
+    h_value_seperate = list()
+    for i in range(0, num_of_agents):
+        h_value += h_values[i][start_locs[i]]
+        h_value_seperate.append(h_values[i][start_locs[i]])
+    f_value = h_value_seperate #g(n) + h(n), since g(n) = 0
     f_next = 0 #placeholder for F-next
     # Fix goal constraints
     constraint_timesteps = constraintTable.keys()
     earliest_goal_timestep = max(constraint_timesteps) if constraint_timesteps else 0
 
-    root = {'loc': start_loc[agent],
+    root = {'locs': tuple(start_locs),
             'g_val': 0,
             'h_val': h_value,
+            'h_val_sep': tuple(h_value_seperate),
+            'f_val': f_value,
             'parent': None,
             'timestep': 0}
     push_node(open_list, root)
+    closed_list[(root['locs'], root['timestep'])] = root
 
-    closed_list[(root['loc'], root['timestep'])] = root
 
     while len(open_list) > 0:
         curr = pop_node(open_list)
-        #time.sleep(1)
-        if curr['loc'] == goal_loc[agent] and curr['timestep'] >= earliest_goal_timestep:
-            return get_path(curr)
+        print('POP')
+        print(curr)
+        time.sleep(1)
+        if curr['locs'] == tuple(goal_locs) and curr['timestep'] >= earliest_goal_timestep:
+            return get_path(curr, num_of_agents)
+
 
         #Set N and Fnext
-        osf_ans = OSF(f_value, curr, h_values, my_map, constraintTable, agent)
+        f_value = curr['f_val']
+        print('FVAL')
+        print(f_value)
+        perm = product(list(range(5)), repeat=num_of_agents) #list of all possible moves
+        osf_ans = OSF(f_value, curr, h_values, my_map, constraintTable, perm, num_of_agents, closed_list)
         N = osf_ans[0]
         f_next = osf_ans[1]
         for nc in N:
-            child_loc = nc
+            child_locs = nc
+            #get sum of hval from each agent
+            h_value = 0
+            h_value_seperate = []
+            for i in range(num_of_agents):
+                h_value = h_value + h_values[i][child_locs[i]]
+                h_value_seperate.append(h_values[i][start_locs[i]])
 
-            if is_illegal(child_loc, my_map) or is_ext_constrained(curr['loc'], child_loc, curr['timestep'], constraintTable):
-                 continue
-            #if is_conflicted(curr['loc'], curr['parent']['loc'], agent, child_loc):
-            #    continue
-            if my_map[child_loc[0]][child_loc[1]]:
-                continue
-            child = {'loc': child_loc,
+            child = {'locs': tuple(child_locs),
                     'g_val': curr['g_val'] + 1,
-                    'h_val': h_values[agent][child_loc],
+                    'h_val': h_value,
+                    'h_val_sep': tuple(h_value_seperate),
+                    'f_val': f_value,
                     'parent': curr,
                     'timestep': curr['timestep'] + 1}
-            if (child['loc']) in closed_list:
-                existing_node = closed_list[(child['loc'])]
+            if (child['locs'], child['timestep']) in closed_list:
+                existing_node = closed_list[(child['locs'], child['timestep'])]
                 if compare_nodes(child, existing_node):
-                    closed_list[(child['loc'])] = child
+                    closed_list[(child['locs'], child['timestep'])] = child
                     push_node(open_list, child)
-            push_node(open_list, child)
-        if f_next < 0:  #if f-next is infinity, put it in closed
-            closed_list[(child['loc'])] = child
+            else:
+                push_node(open_list, child)
+        if -1 in f_next:  #if f-next is infinity, put it in closed
+            closed_list[(curr['locs'], curr['timestep'])] = child
         else:
-            f_value = f_next
+            curr['f_val'] = f_next
             push_node(open_list, curr)
     return None
