@@ -311,7 +311,10 @@ class CBSSolver(object):
                     meta_starts.append(self.starts[i])
                     meta_heuristics.append(self.heuristics[i])
                 
-                paths = a_star_coupled(self.my_map, meta_starts, meta_goals, meta_heuristics, extract_external_constraints(meta_ext_constraints))
+                if len(meta_agent) > 1:
+                    paths = a_star_coupled(self.my_map, meta_starts, meta_goals, meta_heuristics, extract_external_constraints(meta_ext_constraints, meta_agent))
+                else:
+                    paths = [a_star(self.my_map, meta_starts[0], meta_goals[0], meta_heuristics[0], 0, extract_external_constraints(meta_ext_constraints, meta_agent))]
 
                 if paths is not None:
                     for a in meta_agent:
