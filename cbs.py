@@ -2,8 +2,7 @@ import time as timer
 import heapq
 import random
 from single_agent_planner import compute_heuristics, a_star, get_location, get_sum_of_cost, a_star
-from Astar_coupled_std2 import a_star_coupled
-############################################# TODO: check conflicts before extracting external conflict, so to make sure no internal constraints passed to low level
+from Astar_coupled_std import a_star_coupled
 def detect_collision(path1, path2):
     ##############################
     # Task 3.1: Return the first collision that occurs between two robot paths (or None if there is no collision)
@@ -64,11 +63,6 @@ def standard_splitting(collision): # follows 8.4.1 paragraph 4
 
 
 def extract_external_constraints(external_constraints, agents): # takes external constraints meta_agent and outputs same constraints but in format that coupled a* needs  
-    # !!!!!important!!!!!
-    # TODO:
-    # remember to exclude constraints formed because of the conflicts(collisions) between any pair of agents/meta-agents inside the meta-agent we are looking at 
-    
-    
     constraints = []
     agent_index = dict()
     for i in range(len(agents)):
@@ -98,7 +92,7 @@ class CBSSolver(object):
         starts      - [(x1, y1), (x2, y2), ...] list of start locations
         goals       - [(x1, y1), (x2, y2), ...] list of goal locations
         """
-        self.B = 2 #MA-CBS
+        self.B = 2 #MA-CBS !!!!! change this to control when to merge
         
         self.my_map = my_map
         self.starts = starts
