@@ -96,7 +96,17 @@ def get_path(goal_node):
     while curr is not None:
         path.append(curr['loc'])
         curr = curr['parent']
+    
+    i = 0
+    for j in range(1, len(path)):
+        if path[0] == path[j]:
+            i += 1
+        else:
+            break
+        
     path.reverse()
+    if i != 0: del path[-i:]
+    
     return path
 
 

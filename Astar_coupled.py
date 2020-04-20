@@ -27,25 +27,27 @@ def push_node(open_list, node):
     # print((node['g_val'] + node['h_val'], node['h_val'], node['loc']))
     # assignedNodeList = [node['loc'][i] for i in range(len(node['loc']) - node['unassigned'])]
     assignedNodeList = node['loc']
-    heapq.heappush(open_list, KeyDict((node['g_val'] + node['h_val'], node['h_val'], assignedNodeList), node))
+    heapq.heappush(open_list, KeyDict((node['g_val'] + node['h_val'], node['h_val'], node['loc']), node))
 
 
 def pop_node(open_list):
     curr = heapq.heappop(open_list)
     return curr.dct
 
-def build_ext_constraints_tbl(constraints):
+def build_ext_constraints_tbl(constraints, agent):
     constraintTable = dict()
     for constraint in constraints:
-        if constraint['timestep'] not in constraintTable:
-            constraintTable[constraint['timestep']] = set()
-        
-        if len(constraint['loc']) == 1:
-            constraintTable[constraint['timestep']].add(constraint['loc'][0])
-        
-        # Edge constraint
-        elif len(constraint['loc']) == 2:
-            constraintTable[constraint['timestep']].add(constraint['loc'][0] + constraint['loc'][1])
+
+        if agent in constraint['agent']:
+            if constraint['timestep'] not in constraintTable:
+                constraintTable[constraint['timestep']] = set()
+            
+            if len(constraint['loc']) == 1:
+                constraintTable[constraint['timestep']].add(constraint['loc'][0])
+            
+            # Edge constraint
+            elif len(constraint['loc']) == 2:
+                constraintTable[constraint['timestep']].add(constraint['loc'][0] + constraint['loc'][1])
     
     return constraintTable
 
@@ -74,16 +76,6 @@ def is_illegal(child_loc, my_map):
         retVal = True
     return retVal
 
-# def is_conflicted(loc, parent_loc, agent, child_loc):
-#     # Check if a move is conflicted (agents moving into each other)
-#     for i in range(agent):
-#         if child_loc == loc[i]:
-#             return True
-        
-#         if loc[i] == parent_loc[agent] and child_loc == parent_loc[i]:
-#             return True
-
-#     return False
 
 def is_conflicted(node, agent, child_loc):
     for i in range(agent):
@@ -99,7 +91,21 @@ def is_conflicted(node, agent, child_loc):
 
     return False
         
+def imm_duplicated(node1, node2):
+    agentCount = len(node1['loc'])
+    # Check if the unassigned agent have the same moves available
+    for i in range(agentCount - node1['unassigned'], agentCount):
+        currLoc = node1['loc'][i]
+        if currLoc != node2['loc'][i]:
+            return False
+        
+        for j in range(0, 5):
+            child_loc = move(currLoc, j)
 
+            if is_conflicted(node1, i, child_loc) != is_conflicted(node2, i, child_loc):
+                return False
+    
+    return True
 
 def get_path(goal_node, agentCount):
     retVal = [ [] for i in range(agentCount) ]
@@ -131,17 +137,21 @@ def a_star_coupled(my_map, start_locs, goal_locs, h_values, ext_constraints):
     # print("MA_CBS triggered")
 
     agentCount = len(start_locs)
-
-    constraintTable = build_ext_constraints_tbl(ext_constraints)
+    constraintTables = [build_ext_constraints_tbl(ext_constraints, i) for i in range(agentCount)]
+    
     open_list = []
-    closed_list = dict()
+    imm_closed_list = dict()
+    std_closed_list = dict()
     
     h_value = 0
     for i in range(agentCount):
         h_value += h_values[i][start_locs[i]]
 
     # Fix goal constraints
-    constraint_timesteps = constraintTable.keys()
+    constraint_timesteps = list()
+    for table in constraintTables:
+        constraint_timesteps += table.keys()
+    
     earliest_goal_timestep = max(constraint_timesteps) if constraint_timesteps else 0
 
     root = {'loc': tuple(start_locs), 
@@ -152,7 +162,7 @@ def a_star_coupled(my_map, start_locs, goal_locs, h_values, ext_constraints):
             'timestep': 0}
     
     push_node(open_list, root)
-    closed_list[(root['loc'], root['timestep'])] = root
+    std_closed_list[(root['loc'], root['timestep'])] = root
 
     while len(open_list) > 0:
         curr = pop_node(open_list)
@@ -165,9 +175,12 @@ def a_star_coupled(my_map, start_locs, goal_locs, h_values, ext_constraints):
             for dir in range(5):
                 child_loc = move(curr['loc'][0], dir)
                 
-                if is_illegal(child_loc, my_map) or is_ext_constrained(curr['loc'], child_loc, curr['timestep'] + 1, constraintTable):
+                if is_illegal(child_loc, my_map):
                     continue
-                
+
+                if is_ext_constrained(curr['loc'][0], child_loc, curr['timestep'] + 1, constraintTables[0]):
+                    continue
+
                 new_loc = tuple(child_loc if i == 0 else curr['loc'][i] for i in range(agentCount))
                 new_h_val = curr['h_val'] + h_values[0][child_loc] - h_values[0][curr['loc'][0]]
 
@@ -178,14 +191,25 @@ def a_star_coupled(my_map, start_locs, goal_locs, h_values, ext_constraints):
                         'unassigned': agentCount - 1,
                         'timestep': curr['timestep'] + 1}
 
-                # if (child['loc'], child['timestep'], child['unassigned']) in closed_list:
-                #     existing_node = closed_list[(child['loc'], child['timestep'], child['unassigned'])]
-                #     if compare_nodes(child, existing_node):
-                #         closed_list[(child['loc'], child['timestep'], child['unassigned'])] = child
-                #         push_node(open_list, child)
-                # else:
-                #     closed_list[(child['loc'], child['timestep'], child['unassigned'])] = child
-                push_node(open_list, child)
+                if (child['loc'], child['timestep'], child['unassigned']) in imm_closed_list:
+                    duplicated = False
+
+                    for i in range(len(imm_closed_list[(child['loc'], child['timestep'], child['unassigned'])])):
+                        existing_node = imm_closed_list[(child['loc'], child['timestep'], child['unassigned'])][i]
+                        duplicated = imm_duplicated(child, existing_node)
+
+                        if duplicated:
+                            if compare_nodes(child, existing_node):
+                                imm_closed_list[(child['loc'], child['timestep'], child['unassigned'])][i] = child
+                                push_node(open_list, child)
+                            break
+                    
+                    if not duplicated:
+                        imm_closed_list[(child['loc'], child['timestep'], child['unassigned'])].append(child)
+                        push_node(open_list, child)
+                else:
+                    imm_closed_list[(child['loc'], child['timestep'], child['unassigned'])] = [child]
+                    push_node(open_list, child)
             
         
         else:
@@ -195,12 +219,12 @@ def a_star_coupled(my_map, start_locs, goal_locs, h_values, ext_constraints):
             for dir in range(5):
                 child_loc = move(curr['loc'][agent], dir)
 
-                if is_illegal(child_loc, my_map) or is_ext_constrained(curr['loc'][agent], child_loc, curr['timestep'], constraintTable):
+                if is_illegal(child_loc, my_map):
                     continue
 
-                # if is_conflicted(curr['loc'], curr['parent']['loc'], agent, child_loc):
-                #     continue
-
+                if is_ext_constrained(curr['loc'][agent], child_loc, curr['timestep'], constraintTables[agent]):
+                    continue
+                
                 if is_conflicted(curr, agent, child_loc):
                     continue
                 
@@ -216,16 +240,32 @@ def a_star_coupled(my_map, start_locs, goal_locs, h_values, ext_constraints):
                         'timestep': curr['timestep']}
                 
                 if isLastAgent:
-                    if (child['loc'], child['timestep']) in closed_list:
-                        existing_node = closed_list[(child['loc'], child['timestep'])]
+                    if (child['loc'], child['timestep']) in std_closed_list:
+                        existing_node = std_closed_list[(child['loc'], child['timestep'])]
                         if compare_nodes(child, existing_node):
-                            closed_list[(child['loc'], child['timestep'])] = child
+                            std_closed_list[(child['loc'], child['timestep'])] = child
                             push_node(open_list, child)
                     else:
-                        closed_list[(child['loc'], child['timestep'])] = child
+                        std_closed_list[(child['loc'], child['timestep'])] = child
                         push_node(open_list, child)
                 else:
-                    push_node(open_list, child)
+                    if (child['loc'], child['timestep'], child['unassigned']) in imm_closed_list:
+                        duplicated = False
+                        for i in range(len(imm_closed_list[(child['loc'], child['timestep'], child['unassigned'])])):
+                            existing_node = imm_closed_list[(child['loc'], child['timestep'], child['unassigned'])][i]
+                            duplicated = imm_duplicated(child, existing_node)
 
+                            if duplicated:
+                                if compare_nodes(child, existing_node):
+                                    imm_closed_list[(child['loc'], child['timestep'], child['unassigned'])][i] = child
+                                    push_node(open_list, child)
+                                break
+                        
+                        if not duplicated:
+                            imm_closed_list[(child['loc'], child['timestep'], child['unassigned'])].append(child)
+                            push_node(open_list, child)
+                    else:
+                        imm_closed_list[(child['loc'], child['timestep'], child['unassigned'])] = [child]
+                        push_node(open_list, child)
 
     return None
