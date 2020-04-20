@@ -1,9 +1,8 @@
 import time as timer
 import heapq
 import random
-from single_agent_planner import compute_heuristics, a_star, get_location, get_sum_of_cost
-from Astar_coupled import a_star_coupled
-
+from single_agent_planner import compute_heuristics, a_star, get_location, get_sum_of_cost, a_star
+from Astar_coupled_std import a_star_coupled
 def detect_collision(path1, path2):
     ##############################
     # Task 3.1: Return the first collision that occurs between two robot paths (or None if there is no collision)
@@ -52,14 +51,14 @@ def standard_splitting(collision): # follows 8.4.1 paragraph 4
     constraints = []
     if len(collision['loc']) == 1:
         #vertex collision
-        constraints.append({'meta_agent': collision['a1'], 'agents': None, 'loc': collision['loc'], 'timestep': collision['timestep']})
-        constraints.append({'meta_agent': collision['a2'], 'agents': None, 'loc': collision['loc'], 'timestep': collision['timestep']})
+        constraints.append({'meta_agent': collision['a1'], 'agents': None, 'loc': collision['loc'], 'timestep': collision['timestep'], 'collided_with': collision['a2']})
+        constraints.append({'meta_agent': collision['a2'], 'agents': None, 'loc': collision['loc'], 'timestep': collision['timestep'], 'collided_with': collision['a1']})
     else:
         # edge collision
         loc = collision['loc'][:]
         loc.reverse()
-        constraints.append({'meta_agent': collision['a1'], 'agents': None, 'loc': collision['loc'], 'timestep': collision['timestep']})
-        constraints.append({'meta_agent': collision['a2'], 'agents': None, 'loc': loc, 'timestep': collision['timestep']})
+        constraints.append({'meta_agent': collision['a1'], 'agents': None, 'loc': collision['loc'], 'timestep': collision['timestep'], 'collided_with': collision['a2']})
+        constraints.append({'meta_agent': collision['a2'], 'agents': None, 'loc': loc, 'timestep': collision['timestep'], 'collided_with': collision['a1']})
     return constraints
 
 
@@ -93,7 +92,7 @@ class CBSSolver(object):
         starts      - [(x1, y1), (x2, y2), ...] list of start locations
         goals       - [(x1, y1), (x2, y2), ...] list of goal locations
         """
-        self.B = 100000 #MA-CBS
+        self.B = 2 #MA-CBS !!!!! change this to control when to merge
         
         self.my_map = my_map
         self.starts = starts
@@ -152,19 +151,26 @@ class CBSSolver(object):
                     self.CM[x][y] = self.CM[x][y] + 1
         pass
 
-    def merge_external_constraints(self, meta_agent1, meta_agent2, constraints):
+    def merge_external_constraints(self, meta_agent1, meta_agent2, constraints): 
         new_constraints = []
         for constraint in constraints:
             if constraint['meta_agent'] == meta_agent1:
                 if constraint['agents'] is None: # 8.4.1 paragraph 2
-                    new_constraints.append({'meta_agent': meta_agent1+meta_agent2, 'agents': meta_agent1, 'loc': constraint['loc'], 'timestep': constraint['timestep']})
+                    new_constraint = {'meta_agent': meta_agent1+meta_agent2, 'agents': meta_agent1, 'loc': constraint['loc'], 'timestep': constraint['timestep'], 'collided_with': constraint['collided_with']}
+                    
                 else:
-                    new_constraints.append({'meta_agent': meta_agent1+meta_agent2, 'agents': constraint['agents'], 'loc': constraint['loc'], 'timestep': constraint['timestep']})
+                    new_constraint = {'meta_agent': meta_agent1+meta_agent2, 'agents': constraint['agents'], 'loc': constraint['loc'], 'timestep': constraint['timestep'],'collided_with': constraint['collided_with']}
+                    
             elif constraint['meta_agent'] == meta_agent2:
                 if constraint['agents'] is None: # 8.4.1 paragraph 2
-                    new_constraints.append({'meta_agent': meta_agent1+meta_agent2, 'agents': meta_agent2, 'loc': constraint['loc'], 'timestep': constraint['timestep']})
+                    new_constraint = {'meta_agent': meta_agent1+meta_agent2, 'agents': meta_agent2, 'loc': constraint['loc'], 'timestep': constraint['timestep'],'collided_with': constraint['collided_with']}
+        
                 else:
-                    new_constraints.append({'meta_agent': meta_agent1+meta_agent2, 'agents': constraint['agents'], 'loc': constraint['loc'], 'timestep': constraint['timestep']})
+                    new_constraint = {'meta_agent': meta_agent1+meta_agent2, 'agents': constraint['agents'], 'loc': constraint['loc'], 'timestep': constraint['timestep'],'collided_with': constraint['collided_with']}
+            else: 
+                continue
+            if not set(new_constraint['collided_with']).issubset(set(new_constraint['meta_agent'])): # don't output internal constraints
+                new_constraints.append(new_constraint)
         return new_constraints
 
     def find_solution(self, disjoint=True):
@@ -189,10 +195,10 @@ class CBSSolver(object):
         for i in range(self.num_of_agents):  # Find initial path for each agent
             #path = a_star(self.my_map, self.starts[i], self.goals[i], self.heuristics[i],
                           #i, root['constraints'])
-            path = a_star_coupled(self.my_map, [self.starts[i]], [self.goals[i]], [self.heuristics[i]], [])
+            path = a_star(self.my_map, self.starts[i], self.goals[i], self.heuristics[i], 0, [])
             if path is None:
                 raise BaseException('No solutions')
-            root['paths'].append(path[0])
+            root['paths'].append(path)
 
         root['cost'] = get_sum_of_cost(root['paths'])
         root['meta_collisions'] = detect_collisions(root['paths'], root['meta_agents'])
@@ -256,11 +262,12 @@ class CBSSolver(object):
                 meta_starts = []
                 meta_goals = []
                 meta_heuristics = []
-                meta_constraints = extract_external_constraints(common_ext_constr) # these are the constraints of the new meta-agent with outside agents
+                meta_constraints = extract_external_constraints(common_ext_constr, a_meta) # these are the constraints of the new meta-agent with outside agents
                 for i in a_meta:
                     meta_goals.append(self.goals[i])
                     meta_starts.append(self.starts[i])
                     meta_heuristics.append(self.heuristics[i])
+                
                 meta_sol = a_star_coupled(self.my_map, meta_starts, meta_goals, meta_heuristics, meta_constraints)
                 if meta_sol is not None:
                     for i in a_meta:
@@ -310,15 +317,12 @@ class CBSSolver(object):
                     meta_goals.append(self.goals[i])
                     meta_starts.append(self.starts[i])
                     meta_heuristics.append(self.heuristics[i])
-                
                 if len(meta_agent) > 1:
                     paths = a_star_coupled(self.my_map, meta_starts, meta_goals, meta_heuristics, extract_external_constraints(meta_ext_constraints, meta_agent))
                 else:
                     paths = [a_star(self.my_map, meta_starts[0], meta_goals[0], meta_heuristics[0], 0, extract_external_constraints(meta_ext_constraints, meta_agent))]
-
                 if paths is not None:
-                    for a in meta_agent:
-                      
+                    for a in meta_agent:                      
                         Q['paths'][a] = paths.pop(0)[:]
 
                     Q['cost'] = get_sum_of_cost(Q['paths'])

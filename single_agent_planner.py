@@ -60,8 +60,14 @@ def build_constraint_table(constraints, agent):
     posConstraintTbl = dict()
     for constraint in constraints:        
         # skip unrelated constraints
+<<<<<<< HEAD
         if constraint['agent'] != agent:
             continue
+=======
+        if 'agent' in constraint:
+            if constraint['agent'] != agent:
+                continue
+>>>>>>> origin/master
 
         agentTS = constraint['timestep']
         locList = constraint['loc']
