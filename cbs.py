@@ -63,10 +63,18 @@ def standard_splitting(collision): # follows 8.4.1 paragraph 4
     return constraints
 
 
-def extract_external_constraints(external_constraints): # takes external constraints and outputs same constraints but in format that coupled a* needs  
+def extract_external_constraints(external_constraints, agents): # takes external constraints meta_agent and outputs same constraints but in format that coupled a* needs  
     constraints = []
+    agent_index = dict()
+    for i in range(len(agents)):
+        agent_index[agents[i]] = i
     for xc in external_constraints:
-        constraints.append({'loc': xc['loc'], 'timestep': xc['timestep']})
+        new_constraint = {'loc': xc['loc'], 'timestep': xc['timestep']}
+        if xc['agents'] is None:
+            new_constraint['agents'] = list(range(len(agents)))
+        else:
+            new_constraint['agents'] = [agent_index[a] for a in xc['agents']]
+        constraints.append(new_constraint)
     return constraints
 
 def metaconstr2constr(meta_constraint): # output a list of constraints taken from a meta-constraint which single a* takes as input 
@@ -303,7 +311,10 @@ class CBSSolver(object):
                     meta_starts.append(self.starts[i])
                     meta_heuristics.append(self.heuristics[i])
                 
-                paths = a_star_coupled(self.my_map, meta_starts, meta_goals, meta_heuristics, extract_external_constraints(meta_ext_constraints))
+                if len(meta_agent) > 1:
+                    paths = a_star_coupled(self.my_map, meta_starts, meta_goals, meta_heuristics, extract_external_constraints(meta_ext_constraints, meta_agent))
+                else:
+                    paths = [a_star(self.my_map, meta_starts[0], meta_goals[0], meta_heuristics[0], 0, extract_external_constraints(meta_ext_constraints, meta_agent))]
 
                 if paths is not None:
                     for a in meta_agent:
