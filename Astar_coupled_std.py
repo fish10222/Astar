@@ -26,7 +26,8 @@ def build_ext_constraints_tbl(constraints):
     for c in constraints:
         if not c['timestep'] in table:
             table[c['timestep']] = []
-        table[c['timestep']].append(c['loc'])
+        for a in c['agents']:
+            table[c['timestep']].append({'agent':a , 'loc':c['loc']})
     return table
 
 
@@ -41,9 +42,9 @@ def any_ext_constrained(prev_locs, curr_locs, curr_time, constraint_table):
     num_of_agents = len(curr_locs)
     for a in range(num_of_agents):
         if curr_time in constraint_table:
-            if [curr_locs[a]] in constraint_table[curr_time]:
+            if {'agent':a, 'loc':[curr_locs[a]]} in constraint_table[curr_time]:
                 return True
-            elif [curr_locs[a], prev_locs[a]] in constraint_table[curr_time]:
+            elif {'agent':a, 'loc':[curr_locs[a], prev_locs[a]]} in constraint_table[curr_time]:
                 return True
     return False
 
