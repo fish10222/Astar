@@ -110,11 +110,13 @@ def epea_star(my_map, start_locs, goal_locs, h_values, ext_constraints):
     open_list = []
     closed_list = dict()
     h_value = 0
-    h_value_seperate = list()
+    f_value_seperate = list()
+    g_value_seperate = list()
     for i in range(0, num_of_agents):
         h_value += h_values[i][start_locs[i]]
-        h_value_seperate.append(h_values[i][start_locs[i]])
-    f_value = h_value_seperate #g(n) + h(n), since g(n) = 0
+        f_value_seperate.append(h_values[i][start_locs[i]])
+        g_value_seperate.append(0)
+    f_value = f_value_seperate #g(n) + h(n), since g(n) = 0
     f_next = 0 #placeholder for F-next
     # Fix goal constraints
     constraint_timesteps = constraintTable.keys()
@@ -122,11 +124,15 @@ def epea_star(my_map, start_locs, goal_locs, h_values, ext_constraints):
 
     root = {'locs': tuple(start_locs),
             'g_val': 0,
+            'g_val_sep': g_value_seperate,
             'h_val': h_value,
-            'h_val_sep': tuple(h_value_seperate),
             'f_val': f_value,
             'parent': None,
             'timestep': 0}
+    ### if an agent spawns at its goal, set cost 0
+    # for i in range(num_of_agents):
+    #     if root['locs'][i] == goal_locs[i]:
+    #         root['finished_cost'][i] = 0
     push_node(open_list, root)
     closed_list[(root['locs'], root['timestep'])] = root
 
@@ -135,7 +141,7 @@ def epea_star(my_map, start_locs, goal_locs, h_values, ext_constraints):
         curr = pop_node(open_list)
         print('POP')
         print(curr)
-        time.sleep(1)
+        #time.sleep(1)
         if curr['locs'] == tuple(goal_locs) and curr['timestep'] >= earliest_goal_timestep:
             return get_path(curr, num_of_agents)
 
@@ -145,25 +151,31 @@ def epea_star(my_map, start_locs, goal_locs, h_values, ext_constraints):
         print('FVAL')
         print(f_value)
         perm = product(list(range(5)), repeat=num_of_agents) #list of all possible moves
-        osf_ans = OSF(f_value, curr, h_values, my_map, constraintTable, perm, num_of_agents, closed_list)
+        osf_ans = OSF(f_value, curr, h_values, my_map, goal_locs, constraintTable, perm, num_of_agents, closed_list)
+        #time.sleep(1)
         N = osf_ans[0]
         f_next = osf_ans[1]
         for nc in N:
             child_locs = nc
             #get sum of hval from each agent
             h_value = 0
-            h_value_seperate = []
             for i in range(num_of_agents):
                 h_value = h_value + h_values[i][child_locs[i]]
-                h_value_seperate.append(h_values[i][start_locs[i]])
 
             child = {'locs': tuple(child_locs),
-                    'g_val': curr['g_val'] + 1,
+                    'g_val': curr['g_val']+1,
+                    'g_val_sep': copy.deepcopy(curr['g_val_sep']),
                     'h_val': h_value,
-                    'h_val_sep': tuple(h_value_seperate),
                     'f_val': f_value,
                     'parent': curr,
                     'timestep': curr['timestep'] + 1}
+
+            for i in range(num_of_agents):
+                if curr['locs'][i] == child['locs'][i] == goal_locs[i]:
+                    child['g_val_sep'][i] = child['g_val_sep'][i]
+                else:
+                    child['g_val_sep'][i] = child['g_val_sep'][i] + 1
+
             if (child['locs'], child['timestep']) in closed_list:
                 existing_node = closed_list[(child['locs'], child['timestep'])]
                 if compare_nodes(child, existing_node):
@@ -176,4 +188,5 @@ def epea_star(my_map, start_locs, goal_locs, h_values, ext_constraints):
         else:
             curr['f_val'] = f_next
             push_node(open_list, curr)
+        print(open_list)
     return None

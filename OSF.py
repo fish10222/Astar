@@ -80,11 +80,12 @@ lookup_table = {
     0:1,
     1:2,
 }
-def OSF (fval, curr_node, h_values, my_map, constraint_table, moves, num_of_agents, closed_list):
+def OSF (fval, curr_node, h_values, my_map, goal_locs, constraint_table, moves, num_of_agents, closed_list):
     """
         f_next =  fval + min(∆f)
         returns ([list of locations], f_next)
     """
+    print(h_values)
     f_next = []
     for i in range(num_of_agents):
         f_next.append(math.inf)
@@ -114,18 +115,24 @@ def OSF (fval, curr_node, h_values, my_map, constraint_table, moves, num_of_agen
             continue
         ####
         ####
-        if (tuple(next_loc), curr_node['timestep']+1) in closed_list:
-            continue
+        #if (tuple(next_loc), curr_node['timestep']+1) in closed_list:
+        #    continue
         ####
         f_next_node = []
         for i in range(num_of_agents):
+            print(f'AGENT {i}')
             curr_hval = h_values[i][current_loc[i]]
             print(curr_hval)
             next_hval = h_values[i][next_loc[i]]
             print(next_hval)
             delta_h = next_hval - curr_hval
             delta_f = lookup_table[delta_h]
-            f_next_node.append(curr_hval + curr_node['g_val'] + delta_f)
+            if current_loc[i] == next_loc[i] == goal_locs[i]:
+                print('in goal')
+                delta_f = 0
+            print(delta_f)
+            f_next_node.append(curr_hval + curr_node['g_val_sep'][i] + delta_f)
+            #f_next_node.append(curr_hval + curr_node['g_val'] + delta_f)
         if f_next_node != fval and f_next_node > fval:
                 f_next= min(f_next, f_next_node)   #set f_next to samllest f
         print("PASSED")
@@ -133,7 +140,7 @@ def OSF (fval, curr_node, h_values, my_map, constraint_table, moves, num_of_agen
         print(f_next_node)
         if f_next_node == fval:         #if next node matches the f_value, we put in list
             newlocs.append(next_loc)
-        
+
     #if math.inf in f_next:
     if len(newlocs) <= 0:
         for f in range(len(f_next)):

@@ -27,12 +27,11 @@ class EPEAStarSolver(object):
         """ Finds paths for all agents from their start locations to their goal locations."""
 
         start_time = timer.time()
-        result = []
 
-        path = epea_star(self.my_map, self.starts, self.goals, self.heuristics, [])
-        if path is None:
+        result = epea_star(self.my_map, self.starts, self.goals, self.heuristics, [])
+        if result is None:
             raise BaseException('No solutions')
-        result.append(path)
+        #result.append(path)
 
         self.CPU_time = timer.time() - start_time
 
