@@ -1,6 +1,7 @@
 import heapq
 import copy
 import time
+import math
 from itertools import product
 from functools import total_ordering
 from OSF import OSF
@@ -141,7 +142,7 @@ def epea_star(my_map, start_locs, goal_locs, h_values, ext_constraints):
         curr = pop_node(open_list)
         print('POP')
         print(curr)
-        time.sleep(1)
+        #time.sleep(1)
         if curr['locs'] == tuple(goal_locs) and curr['timestep'] >= earliest_goal_timestep:
             return get_path(curr, num_of_agents)
 
@@ -152,7 +153,7 @@ def epea_star(my_map, start_locs, goal_locs, h_values, ext_constraints):
         print(f_value)
         perm = product(list(range(5)), repeat=num_of_agents) #list of all possible moves
         osf_ans = OSF(f_value, curr, h_values, my_map, goal_locs, constraintTable, perm, num_of_agents, closed_list)
-        time.sleep(1)
+        #time.sleep(1)
         N = osf_ans[0]
         f_next = osf_ans[1]
         for nc in N:
@@ -163,7 +164,7 @@ def epea_star(my_map, start_locs, goal_locs, h_values, ext_constraints):
                 h_value = h_value + h_values[i][child_locs[i]]
 
             child = {'locs': tuple(child_locs),
-                    'g_val': curr['g_val']+1,
+                    'g_val': copy.deepcopy(curr['g_val']),
                     'g_val_sep': copy.deepcopy(curr['g_val_sep']),
                     'h_val': h_value,
                     'f_val': f_value,
@@ -175,6 +176,7 @@ def epea_star(my_map, start_locs, goal_locs, h_values, ext_constraints):
                     child['g_val_sep'][i] = child['g_val_sep'][i]
                 else:
                     child['g_val_sep'][i] = child['g_val_sep'][i] + 1
+                    child['g_val'] = child['g_val'] + 1
 
             if (child['locs'], child['timestep']) in closed_list:
                 existing_node = closed_list[(child['locs'], child['timestep'])]

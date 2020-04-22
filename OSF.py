@@ -3,28 +3,7 @@ import math
 def move(loc, dir):
     directions = [(0, -1), (1, 0), (0, 1), (-1, 0), (0, 0)]
     return loc[0] + directions[dir][0], loc[1] + directions[dir][1]
-"""
-def is_illegal(child_loc, my_map):
-    # Check out of bound moves
-    retVal = False
-    if child_loc[0] < 0 or child_loc[1] < 0 or child_loc[0] > len(my_map) - 1 or child_loc[1] > len(my_map[0]) - 1 or my_map[child_loc[0]][child_loc[1]]:
-        retVal = True
-    return retVal
 
-def is_ext_constrained(curr_loc, next_loc, next_time, constraint_table):
-    # External constraints check
-    if not constraint_table:
-        return False
-
-    if next_time not in constraint_table:
-        return False
-
-    edgeConstraint = curr_loc + next_loc
-
-    if (next_loc in constraint_table[next_time]) or (edgeConstraint in constraint_table[next_time]):
-        return True
-    return False
-"""
 def any_ext_constrained(prev_locs, curr_locs, curr_time, constraint_table):
     # External constraints check
     prev_locs = list(prev_locs)
@@ -94,7 +73,6 @@ def OSF (fval, curr_node, h_values, my_map, goal_locs, constraint_table, moves, 
     #curr_time = curr_node['timestep']
     #curr_hval = curr_node['h_val']
     current_loc = curr_node['locs']
-    print("move")
     for p in list(moves):
         next_loc = [move(curr_node['locs'][i], p[i]) for i in range(num_of_agents)]
         # print('OSF NEXT LOC')
@@ -133,7 +111,12 @@ def OSF (fval, curr_node, h_values, my_map, goal_locs, constraint_table, moves, 
             print(delta_f)
             f_next_node.append(curr_hval + curr_node['g_val_sep'][i] + delta_f)
             #f_next_node.append(curr_hval + curr_node['g_val'] + delta_f)
-        if f_next_node != fval and f_next_node > fval:
+        fval_sum = 0
+        f_next_node_sum = 0
+        for i in range(num_of_agents):
+            fval_sum = fval_sum + fval[i]
+            f_next_node_sum = f_next_node_sum + f_next_node[i]
+        if f_next_node != fval and f_next_node > fval and f_next_node_sum > fval_sum:
                 f_next= min(f_next, f_next_node)   #set f_next to samllest f
         print("PASSED")
         print(next_loc)
@@ -142,7 +125,7 @@ def OSF (fval, curr_node, h_values, my_map, goal_locs, constraint_table, moves, 
             newlocs.append(next_loc)
 
     #if math.inf in f_next:
-    if len(newlocs) <= 0:
+    if len(newlocs) <= 0 or math.inf in f_next:
         for f in range(len(f_next)):
             f_next[f] = -1
 
