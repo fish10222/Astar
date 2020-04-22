@@ -141,7 +141,7 @@ def epea_star(my_map, start_locs, goal_locs, h_values, ext_constraints):
         curr = pop_node(open_list)
         print('POP')
         print(curr)
-        #time.sleep(1)
+        time.sleep(1)
         if curr['locs'] == tuple(goal_locs) and curr['timestep'] >= earliest_goal_timestep:
             return get_path(curr, num_of_agents)
 
@@ -152,7 +152,7 @@ def epea_star(my_map, start_locs, goal_locs, h_values, ext_constraints):
         print(f_value)
         perm = product(list(range(5)), repeat=num_of_agents) #list of all possible moves
         osf_ans = OSF(f_value, curr, h_values, my_map, goal_locs, constraintTable, perm, num_of_agents, closed_list)
-        #time.sleep(1)
+        time.sleep(1)
         N = osf_ans[0]
         f_next = osf_ans[1]
         for nc in N:
