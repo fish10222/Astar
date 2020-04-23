@@ -38,57 +38,17 @@ def pop_node(open_list):
     return curr.dct
 
 def build_ext_constraints_tbl(constraints):
-    constraintTable = dict()
-    for constraint in constraints:
-        if constraint['timestep'] not in constraintTable:
-            constraintTable[constraint['timestep']] = set()
-
-        if len(constraint['locs']) == 1:
-            constraintTable[constraint['timestep']].add(constraint['locs'][0])
-
-        # Edge constraint
-        elif len(constraint['locs']) == 2:
-            constraintTable[constraint['timestep']].add(constraint['locs'][0] + constraint['locs'][1])
-
-    return constraintTable
+    table = {}
+    for c in constraints:
+        if not c['timestep'] in table:
+            table[c['timestep']] = []
+        for a in c['agents']:
+            table[c['timestep']].append({'agent':a , 'loc':c['loc']})
+    return table
 
 def compare_nodes(n1, n2):
     """Return true is n1 is better than n2."""
     return n1['g_val'] + n1['h_val'] < n2['g_val'] + n2['h_val']
-
-def is_ext_constrained(curr_loc, next_loc, next_time, constraint_table):
-    # External constraints check
-    if not constraint_table:
-        return False
-
-    if next_time not in constraint_table:
-        return False
-
-    edgeConstraint = curr_loc + next_loc
-
-    if (next_loc in constraint_table[next_time]) or (edgeConstraint in constraint_table[next_time]):
-        return True
-    return False
-
-def is_illegal(child_loc, my_map):
-    # Check out of bound moves
-    retVal = False
-    if child_loc[0] < 0 or child_loc[1] < 0 or child_loc[0] > len(my_map) - 1 or child_loc[1] > len(my_map[0]) - 1 or my_map[child_loc[0]][child_loc[1]]:
-        retVal = True
-    return retVal
-
-def is_conflicted(loc, parent_loc, agent, child_loc):
-    # Check if a move is conflicted (agents moving into each other)
-    for i in range(len(loc)):
-        if not loc[i]:
-            break
-
-        if child_loc == loc[i]:
-            return True
-        if loc[i] == parent_loc[agent] and child_loc == parent_loc[i]:
-            return True
-
-    return False
 
 def get_path(goal_node, agentCount):
     retVal = [ [] for i in range(agentCount) ]
