@@ -33,7 +33,7 @@ def any_out_of_map(child_locs, my_map):
             return True
     return False
 
-def any_conflicted(prev_locs, curr_locs): 
+def any_conflicted(prev_locs, curr_locs):
     # Check if any move is conflicted (agents moving into each other)
     ## agents running into each other at a vertex
 
@@ -69,8 +69,6 @@ def OSF (fval, curr_node, h_values, my_map, goal_locs, constraint_table, moves, 
         f_next.append(math.inf)
 
     newlocs = []
-    #curr_time = curr_node['timestep']
-    #curr_hval = curr_node['h_val']
     current_loc = curr_node['locs']
     for p in list(moves):
         next_loc = [move(curr_node['locs'][i], p[i]) for i in range(num_of_agents)]
