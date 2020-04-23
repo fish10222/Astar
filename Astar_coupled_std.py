@@ -165,7 +165,7 @@ def _siftdown(heap, startpos, pos):
         print(i)
         break
     heap[pos] = newitem
-def a_star_coupled(my_map, start_locs, goal_locs, h_values, ext_constraints):  ###### TODO: single agent version and determine no solution
+def a_star(my_map, start_locs, goal_locs, h_values, ext_constraints):  ###### TODO: single agent version and determine no solution
     # A* for multiple agents
     num_of_agents = len(goal_locs)
     count = 0
