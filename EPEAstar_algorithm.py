@@ -102,7 +102,7 @@ def get_path(goal_node, agentCount):
     for path in retVal:
         path.reverse()
 
-    #print(retVal)
+
     return retVal
 
 def epea_star(my_map, start_locs, goal_locs, h_values, ext_constraints):
@@ -141,20 +141,15 @@ def epea_star(my_map, start_locs, goal_locs, h_values, ext_constraints):
 
     while len(open_list) > 0:
         curr = pop_node(open_list)
-        print('POP')
-        print(curr)
-        #input('press enter')
+
         if curr['locs'] == tuple(goal_locs) and curr['timestep'] >= earliest_goal_timestep:
             return get_path(curr, num_of_agents)
 
 
         #Set N and Fnext
         f_value = curr['f_val']
-        print('FVAL')
-        print(f_value)
         perm = product(list(range(5)), repeat=num_of_agents) #list of all possible moves
         osf_ans = OSF(f_value, curr, h_values, my_map, goal_locs, constraintTable, perm, num_of_agents, closed_list)
-        #input('press enter')
         N = osf_ans[0]
         f_next = osf_ans[1]
         for nc in N:
@@ -188,9 +183,7 @@ def epea_star(my_map, start_locs, goal_locs, h_values, ext_constraints):
                 push_node(open_list, child)
         if -1 in f_next:  #if f-next is infinity, put it in closed
             closed_list[(curr['locs'], curr['timestep'])] = child
-            #input('closed')
         else:
             curr['f_val'] = f_next
             push_node(open_list, curr)
-        print(open_list)
     return None

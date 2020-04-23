@@ -64,7 +64,6 @@ def OSF (fval, curr_node, h_values, my_map, goal_locs, constraint_table, moves, 
         f_next =  fval + min(∆f)
         returns ([list of locations], f_next)
     """
-    print(h_values)
     f_next = []
     for i in range(num_of_agents):
         f_next.append(math.inf)
@@ -75,8 +74,6 @@ def OSF (fval, curr_node, h_values, my_map, goal_locs, constraint_table, moves, 
     current_loc = curr_node['locs']
     for p in list(moves):
         next_loc = [move(curr_node['locs'][i], p[i]) for i in range(num_of_agents)]
-        # print('OSF NEXT LOC')
-        # print(next_loc)
         if any_out_of_map(next_loc, my_map):
             continue
 
@@ -99,19 +96,13 @@ def OSF (fval, curr_node, h_values, my_map, goal_locs, constraint_table, moves, 
             continue
         ####
         f_next_node = []
-        print('---------------------')
         for i in range(num_of_agents):
-            print(f'AGENT {i}')
             curr_hval = h_values[i][current_loc[i]]
-            print(curr_hval)
             next_hval = h_values[i][next_loc[i]]
-            print(next_hval)
             delta_h = next_hval - curr_hval
             delta_f = lookup_table[delta_h]
             if current_loc[i] == next_loc[i] == goal_locs[i]:
-                print('in goal')
                 delta_f = 0
-            print(delta_f)
             f_next_node.append(curr_hval + curr_node['g_val_sep'][i] + delta_f)
         fval_sum = 0
         f_next_node_sum = 0
@@ -120,21 +111,13 @@ def OSF (fval, curr_node, h_values, my_map, goal_locs, constraint_table, moves, 
             f_next_node_sum = f_next_node_sum + f_next_node[i]
         if f_next_node != fval and f_next_node > fval and f_next_node_sum > fval_sum:
                 f_next= min(f_next, f_next_node)   #set f_next to samllest f
-        print("PASSED")
-        print(next_loc)
-        print(fval)
-        print(f_next_node)
-        if f_next_node_sum == fval_sum:
-        #if f_next_node == fval:         #if next node matches the f_value, we put in list
+        if f_next_node_sum == fval_sum:         #if next node matches the f_value, we put in list
             newlocs.append(next_loc)
 
     if math.inf in f_next or len(newlocs) == 0:
-        print(f_next)
         for f in range(len(f_next)):
             f_next[f] = -1
 
     answers = (newlocs, f_next)
-    print('OSF ANSWER')
-    print(answers)
     #returns ((tuple of valid moves), fnext)
     return answers
