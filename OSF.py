@@ -92,11 +92,14 @@ def OSF (fval, curr_node, h_values, my_map, goal_locs, constraint_table, moves, 
         if any_conflicted(curr_node['locs'], next_loc):
             continue
         ####
+        if curr_node['locs'] == tuple(next_loc):
+            continue
         ####
-        #if (tuple(next_loc), curr_node['timestep']+1) in closed_list:
-        #    continue
+        if (tuple(next_loc), curr_node['timestep']+1) in closed_list:
+            continue
         ####
         f_next_node = []
+        print('---------------------')
         for i in range(num_of_agents):
             print(f'AGENT {i}')
             curr_hval = h_values[i][current_loc[i]]
@@ -110,7 +113,6 @@ def OSF (fval, curr_node, h_values, my_map, goal_locs, constraint_table, moves, 
                 delta_f = 0
             print(delta_f)
             f_next_node.append(curr_hval + curr_node['g_val_sep'][i] + delta_f)
-            #f_next_node.append(curr_hval + curr_node['g_val'] + delta_f)
         fval_sum = 0
         f_next_node_sum = 0
         for i in range(num_of_agents):
@@ -120,12 +122,14 @@ def OSF (fval, curr_node, h_values, my_map, goal_locs, constraint_table, moves, 
                 f_next= min(f_next, f_next_node)   #set f_next to samllest f
         print("PASSED")
         print(next_loc)
+        print(fval)
         print(f_next_node)
-        if f_next_node == fval:         #if next node matches the f_value, we put in list
+        if f_next_node_sum == fval_sum:
+        #if f_next_node == fval:         #if next node matches the f_value, we put in list
             newlocs.append(next_loc)
 
-    #if math.inf in f_next:
-    if len(newlocs) <= 0 or math.inf in f_next:
+    if math.inf in f_next or len(newlocs) == 0:
+        print(f_next)
         for f in range(len(f_next)):
             f_next[f] = -1
 
