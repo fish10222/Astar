@@ -9,7 +9,7 @@ from EPEAstar import EPEAStarSolver
 from EPEAstar_algorithm import epea_star
 from Astar_coupled_std import a_star_coupled
 from Astar_coupled_ODID import a_star_coupled_ODID
-from Astar import AstarSolver
+#from Astar import AstarSolver
 from visualize import Animation
 from single_agent_planner import get_sum_of_cost
 
@@ -145,13 +145,6 @@ if __name__ == '__main__':
                     print("***Run MA-CBS with A*+ID+OD***")
                     cbs = CBSSolver(my_map, starts, goals, args.B)            
                     paths, CPU_time, expanded, generated = cbs.find_solution(a_star_coupled_ODID, args.disjoint)
-                elif args.solver == "EPEA2":
-                    solver = EPEAStarSolver(my_map, starts, goals)
-                    paths = solver.find_solution()
-                elif args.solver == "Astar2":
-                    print("***Run Astar***")
-                    solver = AstarSolver(my_map, starts, goals)            
-                    paths = solver.find_solution()
                 else:
                     raise RuntimeError("Unknown solver!")
                 time_total += CPU_time
