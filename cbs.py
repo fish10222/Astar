@@ -2,7 +2,7 @@ import time as timer
 import heapq
 import random
 from single_agent_planner import compute_heuristics, a_star, get_location, get_sum_of_cost, a_star
-from Astar_coupled_std2 import a_star_coupled
+from Astar_coupled_std import a_star_coupled
 ############################################# TODO: check conflicts before extracting external conflict, so to make sure no internal constraints passed to low level
 def detect_collision(path1, path2):
     ##############################
