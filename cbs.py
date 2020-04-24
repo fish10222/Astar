@@ -2,7 +2,8 @@ import time as timer
 import heapq
 import random
 from single_agent_planner import compute_heuristics, a_star, get_location, get_sum_of_cost, a_star
-from Astar_coupled_std import a_star_coupled
+from Astar_coupled_std2 import a_star_coupled
+############################################# TODO: check conflicts before extracting external conflict, so to make sure no internal constraints passed to low level
 def detect_collision(path1, path2):
     ##############################
     # Task 3.1: Return the first collision that occurs between two robot paths (or None if there is no collision)
@@ -63,6 +64,7 @@ def standard_splitting(collision): # follows 8.4.1 paragraph 4
 
 
 def extract_external_constraints(external_constraints, agents): # takes external constraints meta_agent and outputs same constraints but in format that coupled a* needs  
+    
     constraints = []
     agent_index = dict()
     for i in range(len(agents)):
@@ -87,12 +89,12 @@ def metaconstr2constr(meta_constraint): # output a list of constraints taken fro
 class CBSSolver(object):
     """The high-level search of CBS."""
 
-    def __init__(self, my_map, starts, goals):
+    def __init__(self, my_map, starts, goals, B):
         """my_map   - list of lists specifying obstacle positions
         starts      - [(x1, y1), (x2, y2), ...] list of start locations
         goals       - [(x1, y1), (x2, y2), ...] list of goal locations
         """
-        self.B = 2 #MA-CBS !!!!! change this to control when to merge
+        self.B = B #MA-CBS
         
         self.my_map = my_map
         self.starts = starts
@@ -115,12 +117,12 @@ class CBSSolver(object):
 
     def push_node(self, node):
         heapq.heappush(self.open_list, (node['cost'], len(node['meta_collisions']), self.num_of_generated, node))
-        print("Generate node {}".format(self.num_of_generated))
+        #print("Generate node {}".format(self.num_of_generated))
         self.num_of_generated += 1
 
     def pop_node(self):
         _, _, id, node = heapq.heappop(self.open_list)
-        print("Expand node {}".format(id))
+        #print("Expand node {}".format(id))
         self.num_of_expanded += 1
         return node
 
@@ -173,7 +175,7 @@ class CBSSolver(object):
                 new_constraints.append(new_constraint)
         return new_constraints
 
-    def find_solution(self, disjoint=True):
+    def find_solution(self, low_level, disjoint=True):
         """ Finds paths for all agents from their start locations to their goal locations
 
         disjoint    - use disjoint splitting or not
@@ -204,21 +206,7 @@ class CBSSolver(object):
         root['meta_collisions'] = detect_collisions(root['paths'], root['meta_agents'])
         self.push_node(root)
 
-        # Task 3.1: Testing
-        #print(root['meta_collisions'])
-
-        # Task 3.2: Testing
-        #for collision in root['meta_collisions']:
-            #print(standard_splitting(collision))
-
-        ##############################
-        # Task 3.3: High-Level Search
-        #           Repeat the following as long as the open list is not empty:
-        #             1. Get the next node from the open list (you can use self.pop_node()
-        #             2. If this node has no collision, return solution
-        #             3. Otherwise, choose the first collision and convert to a list of constraints (using your
-        #                standard_splitting function). Add a new child node to your open list for each constraint
-        #           Ensure to create a copy of any objects that your child nodes might inherit
+        
         count = 0
         closed_list = []
         while len(self.open_list) > 0:
@@ -229,7 +217,9 @@ class CBSSolver(object):
             if len(P['meta_collisions']) == 0:  # if P has no conflict then
                 self.print_results(P)
                 #print(self.CM)
-                return P['paths']          #    return P.solution // P is goal
+                CPU_time = timer.time() - self.start_time
+                return P['paths'], CPU_time, self.num_of_expanded, self.num_of_generated
+                  #    return P.solution // P is goal
             
             meta_collision = P['meta_collisions'][0]  # C <- first conflict(ai, aj, v, t) in P
             self.updateCM(meta_collision)
@@ -268,7 +258,7 @@ class CBSSolver(object):
                     meta_starts.append(self.starts[i])
                     meta_heuristics.append(self.heuristics[i])
                 
-                meta_sol = a_star_coupled(self.my_map, meta_starts, meta_goals, meta_heuristics, meta_constraints)
+                meta_sol = low_level(self.my_map, meta_starts, meta_goals, meta_heuristics, meta_constraints)
                 if meta_sol is not None:
                     for i in a_meta:
                         P['paths'][i] = meta_sol.pop(0)
@@ -318,7 +308,8 @@ class CBSSolver(object):
                     meta_starts.append(self.starts[i])
                     meta_heuristics.append(self.heuristics[i])
                 if len(meta_agent) > 1:
-                    paths = a_star_coupled(self.my_map, meta_starts, meta_goals, meta_heuristics, extract_external_constraints(meta_ext_constraints, meta_agent))
+                    #paths = a_star_coupled(self.my_map, meta_starts, meta_goals, meta_heuristics, extract_external_constraints(meta_ext_constraints, meta_agent))
+                    paths = low_level(self.my_map, meta_starts, meta_goals, meta_heuristics, extract_external_constraints(meta_ext_constraints, meta_agent))
                 else:
                     paths = [a_star(self.my_map, meta_starts[0], meta_goals[0], meta_heuristics[0], 0, extract_external_constraints(meta_ext_constraints, meta_agent))]
                 if paths is not None:
@@ -330,7 +321,8 @@ class CBSSolver(object):
                     self.push_node(Q)
         
         self.print_results(root)
-        return root['paths']
+        CPU_time = timer.time() - self.start_time
+        return root['paths'], CPU_time, self.num_of_expanded, self.num_of_generated
 
 
     def print_results(self, node):
