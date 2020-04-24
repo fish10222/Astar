@@ -32,9 +32,10 @@ def merge_group(group_list, g1, g2, agentList):
         agentList[i] = g1
     return group_list[g1]
 
-def build_constraints(pathAgent, targetAgent, path):
+def build_constraints(pathAgent, targetAgent, path, ext_constraints):
     constraints = list()
 
+    # Adding constraints
     for i in pathAgent:
         for k in range(len(targetAgent)):
             for j in range(len(path[i])):
@@ -45,11 +46,19 @@ def build_constraints(pathAgent, targetAgent, path):
                     if j != 0:    
                         constraint = {'agent': k, 'loc': [path[i][j], path[i][j-1]], 'timestep': j, 'goal': False}
                         constraints.append(constraint)
-                    
+    
+    # Adding external constraint
+    for x in ext_constraints:
+        for i in ext_constraints['agent']:
+            if i in targetAgent:
+                constraint = {'agent': targetAgent.index(i), 'loc': x['loc'], 'timestep': x['timestep'], 'goal': False}
+                constraints.append(constraint)
+
     return constraints
 
 def a_star_coupled(my_map, start_locs, goal_locs, h_values, ext_constraints):
     agentCount = len(start_locs)
+
 
     # Assign each agent to a group
     agentGroupList = [i for i in range(agentCount)]     
@@ -85,8 +94,8 @@ def a_star_coupled(my_map, start_locs, goal_locs, h_values, ext_constraints):
         if tuple(g1 + g2) not in past_conflicts:
             if tuple(g1) not in replanned:
                 print("Replanning for " + str(g1))
-                constraints = build_constraints(g2, g1, paths)
-                conflict_avoidance_table = build_constraints([i not in g1 for i in range(agentCount)], g1, paths)
+                constraints = build_constraints(g2, g1, paths, [])
+                conflict_avoidance_table = build_constraints([i not in g1 for i in range(agentCount)], g1, paths, [])
 
                 conflict_group = g1
                 conflict_group_old_cost = sum([len(paths[i]) for i in conflict_group])
@@ -107,8 +116,8 @@ def a_star_coupled(my_map, start_locs, goal_locs, h_values, ext_constraints):
                 conflict_group = g2
                 conflict_group_old_cost = sum([len(paths[i]) for i in conflict_group])
                 
-                conflict_avoidance_table = build_constraints([i not in g2 for i in range(agentCount)], g2, paths)
-                constraints = build_constraints(g1, g2, paths)
+                conflict_avoidance_table = build_constraints([i not in g2 for i in range(agentCount)], g2, paths, [])
+                constraints = build_constraints(g1, g2, paths, [])
                 
                 new_path = a_star_OD(my_map, [start_locs[i] for i in g2], [goal_locs[i] for i in g2],
                     [h_values[i] for i in g2], constraints, conflict_avoidance_table)
@@ -124,7 +133,7 @@ def a_star_coupled(my_map, start_locs, goal_locs, h_values, ext_constraints):
         if not g1_solution_found and not g2_solution_found:
             print("Replan unsuccessful, merging groups " + str(g1) + " and " +str(g2))
             conflict_group = merge_group(groupList, agentGroupList[a1], agentGroupList[a2], agentGroupList)
-            conflict_avoidance_table = build_constraints([i for i in range(agentCount)], conflict_group, paths)
+            conflict_avoidance_table = build_constraints([i for i in range(agentCount)], conflict_group, paths, [])
 
             new_path = a_star_OD(my_map, [start_locs[i] for i in conflict_group], [goal_locs[i] for i in conflict_group],
                 [h_values[i] for i in conflict_group], [], [])
