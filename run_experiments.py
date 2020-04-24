@@ -2,7 +2,7 @@
 import argparse
 import glob
 from pathlib import Path
-from cbs_constraint import CBSSolver
+from cbs import CBSSolver
 from independent import IndependentSolver
 from prioritized import PrioritizedPlanningSolver
 from EPEAstar import EPEAStarSolver
