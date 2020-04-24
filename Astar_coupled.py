@@ -12,6 +12,8 @@ def detect_collisions(paths):
                 collision['a1'] = i
                 collision['a2'] = j
                 collisions.append(collision)
+                # Return first collision
+                return collisions
     return collisions
 
 def detect_collision(path1, path2):
@@ -108,6 +110,8 @@ def a_star_coupled(my_map, start_locs, goal_locs, h_values, ext_constraints):
                         print("Replan successful for " + str(conflict_group))
                         
                         g1_solution_found = True
+                        if len(replanned) >= 2:
+                            replanned.pop(0)
                         replanned.append(tuple(g1))
 
 
@@ -127,6 +131,8 @@ def a_star_coupled(my_map, start_locs, goal_locs, h_values, ext_constraints):
                         print("Replan successful for " + str(conflict_group))
 
                         g2_solution_found = True
+                        if len(replanned) >= 2:
+                            replanned.pop(0)
                         replanned.append(tuple(g2))
                 
         
@@ -137,6 +143,9 @@ def a_star_coupled(my_map, start_locs, goal_locs, h_values, ext_constraints):
             constraints = build_constraints([], g2, [], ext_constraints)
             new_path = a_star_OD(my_map, [start_locs[i] for i in conflict_group], [goal_locs[i] for i in conflict_group],
                 [h_values[i] for i in conflict_group], constraints, [])
+            
+            if len(replanned) >= 2:
+                replanned.pop(0)
 
             replanned.append(tuple(g1 + g2))
         
