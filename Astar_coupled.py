@@ -49,7 +49,7 @@ def build_constraints(pathAgent, targetAgent, path, ext_constraints):
     
     # Adding external constraint
     for x in ext_constraints:
-        for i in ext_constraints['agent']:
+        for i in x['agents']:
             if i in targetAgent:
                 constraint = {'agent': targetAgent.index(i), 'loc': x['loc'], 'timestep': x['timestep'], 'goal': False}
                 constraints.append(constraint)
@@ -94,7 +94,7 @@ def a_star_coupled(my_map, start_locs, goal_locs, h_values, ext_constraints):
         if tuple(g1 + g2) not in past_conflicts:
             if tuple(g1) not in replanned:
                 print("Replanning for " + str(g1))
-                constraints = build_constraints(g2, g1, paths, [])
+                constraints = build_constraints(g2, g1, paths, ext_constraints)
                 conflict_avoidance_table = build_constraints([i not in g1 for i in range(agentCount)], g1, paths, [])
 
                 conflict_group = g1
@@ -117,7 +117,7 @@ def a_star_coupled(my_map, start_locs, goal_locs, h_values, ext_constraints):
                 conflict_group_old_cost = sum([len(paths[i]) for i in conflict_group])
                 
                 conflict_avoidance_table = build_constraints([i not in g2 for i in range(agentCount)], g2, paths, [])
-                constraints = build_constraints(g1, g2, paths, [])
+                constraints = build_constraints(g1, g2, paths, ext_constraints)
                 
                 new_path = a_star_OD(my_map, [start_locs[i] for i in g2], [goal_locs[i] for i in g2],
                     [h_values[i] for i in g2], constraints, conflict_avoidance_table)
@@ -134,9 +134,9 @@ def a_star_coupled(my_map, start_locs, goal_locs, h_values, ext_constraints):
             print("Replan unsuccessful, merging groups " + str(g1) + " and " +str(g2))
             conflict_group = merge_group(groupList, agentGroupList[a1], agentGroupList[a2], agentGroupList)
             conflict_avoidance_table = build_constraints([i for i in range(agentCount)], conflict_group, paths, [])
-
+            constraints = build_constraints([], g2, [], ext_constraints)
             new_path = a_star_OD(my_map, [start_locs[i] for i in conflict_group], [goal_locs[i] for i in conflict_group],
-                [h_values[i] for i in conflict_group], [], [])
+                [h_values[i] for i in conflict_group], constraints, [])
 
             replanned.append(tuple(g1 + g2))
         
