@@ -99,7 +99,7 @@ def get_path(goal_node, agentCount):
     
     return retVal
 
-def a_star_coupled(my_map, start_locs, goal_locs, h_values, ext_constraints):
+def a_star_coupled_ODID(my_map, start_locs, goal_locs, h_values, ext_constraints):
     # A* + OD for multiple agents
 
     agentCount = len(start_locs)
