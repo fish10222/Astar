@@ -142,7 +142,7 @@ def epea_star(my_map, start_locs, goal_locs, h_values, ext_constraints):
             else:
                 push_node(open_list, child)
         if -1 in f_next:  #if f-next is infinity, put it in closed
-            closed_list[(curr['locs'], curr['timestep'])] = child
+            closed_list[(curr['locs'], curr['timestep'])] = curr
         else:
             curr['f_val'] = f_next
             push_node(open_list, curr)
